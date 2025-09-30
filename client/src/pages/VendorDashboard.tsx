@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import type { VendorProfile, AuditLog, AccessLog, DataProvenance } from "@shared/schema";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { VendorProfileCard } from "@/components/VendorProfileCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,76 +12,123 @@ import { Button } from "@/components/ui/button";
 import { AuditLogEntry } from "@/components/AuditLogEntry";
 import { AccessLogTable } from "@/components/AccessLogTable";
 import { DataProvenanceTag } from "@/components/DataProvenanceTag";
-import { Eye, FileEdit, Shield } from "lucide-react";
+import { Eye, FileEdit, Shield, Plus } from "lucide-react";
+import { Link } from "wouter";
+import { format } from "date-fns";
 
 export default function VendorDashboard() {
-  //todo: remove mock functionality
-  const [vendorData] = useState({
-    companyName: "Acme Corporation",
-    taxId: "XX-XXX1234",
-    address: "123 Business St, San Francisco, CA 94105",
-    phone: "+1 (555) 123-4567",
-    email: "contact@acme.com",
-    status: "verified" as const,
+  const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+
+  // Fetch vendor profile
+  const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery<{ profile: VendorProfile | null }>({
+    queryKey: ["/api/vendor-profile"],
+    retry: false,
+    enabled: !!user,
+  });
+  
+  const profile = profileResponse?.profile;
+
+  // Fetch audit logs
+  const { data: auditLogs = [] } = useQuery<AuditLog[]>({
+    queryKey: ["/api/vendor-profile", profile?.id, "audit-logs"],
+    enabled: !!profile?.id,
   });
 
-  //todo: remove mock functionality
-  const [auditLogs] = useState([
-    {
-      id: "1",
-      action: "updated banking information",
-      actor: "John Doe",
-      timestamp: "Sep 29, 2025 at 2:45 PM",
-    },
-    {
-      id: "2",
-      action: "verified company address",
-      actor: "System Agent",
-      timestamp: "Sep 29, 2025 at 1:20 PM",
-    },
-    {
-      id: "3",
-      action: "claimed vendor profile",
-      actor: "John Doe",
-      timestamp: "Sep 28, 2025 at 10:30 AM",
-    },
-  ]);
+  // Fetch access logs
+  const { data: accessLogs = [] } = useQuery<AccessLog[]>({
+    queryKey: ["/api/vendor-profile", profile?.id, "access-logs"],
+    enabled: !!profile?.id,
+  });
 
-  //todo: remove mock functionality
-  const [accessLogs] = useState([
-    {
-      id: "1",
-      accessor: "Sarah Johnson",
-      company: "Global Manufacturing Inc",
-      action: "Viewed Profile",
-      timestamp: "2 hours ago",
-    },
-    {
-      id: "2",
-      accessor: "Michael Chen",
-      company: "Tech Solutions LLC",
-      action: "Downloaded Data",
-      timestamp: "5 hours ago",
-    },
-    {
-      id: "3",
-      accessor: "Emma Williams",
-      company: "Enterprise Systems Corp",
-      action: "Viewed Profile",
-      timestamp: "1 day ago",
-    },
-    {
-      id: "4",
-      accessor: "David Brown",
-      company: "Supply Chain Partners",
-      action: "Viewed Profile",
-      timestamp: "2 days ago",
-    },
-  ]);
+  // Fetch provenance data
+  const { data: provenance = [] } = useQuery<DataProvenance[]>({
+    queryKey: ["/api/vendor-profile", profile?.id, "provenance"],
+    enabled: !!profile?.id,
+  });
+
+  // Handle unauthorized errors
+  useEffect(() => {
+    if (profileError && isUnauthorizedError(profileError as Error)) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [profileError, toast]);
+
+  if (authLoading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined} />
+        <div className="max-w-7xl mx-auto px-8 py-16 text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no profile exists, show create profile page
+  if (!profile && !profileLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined} />
+        <main className="max-w-2xl mx-auto px-8 py-16">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="w-8 h-8 text-primary" />
+                <CardTitle className="text-2xl">Welcome to Vendor Network</CardTitle>
+              </div>
+              <CardDescription>
+                Create your verified vendor profile to start managing your company information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                You haven't claimed your vendor profile yet. Create one now to:
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-1">✓</span>
+                  <span>Manage a single verified profile for all your customers</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-1">✓</span>
+                  <span>Track who accesses your company information</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-1">✓</span>
+                  <span>Maintain an immutable audit trail of all changes</span>
+                </li>
+              </ul>
+              <Link href="/edit">
+                <Button className="w-full mt-4" data-testid="button-create-profile">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Vendor Profile
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  const maskTaxId = (taxId: string) => {
+    if (taxId.length > 4) {
+      return 'XX-XXX' + taxId.slice(-4);
+    }
+    return taxId;
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName="John Doe" />
+      <DashboardHeader userName={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined} />
       
       <main className="max-w-7xl mx-auto px-8 py-8">
         <div className="space-y-8">
@@ -96,8 +148,10 @@ export default function VendorDashboard() {
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-profile-views">127</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
+                <div className="text-2xl font-bold" data-testid="text-profile-views">
+                  {accessLogs.length}
+                </div>
+                <p className="text-xs text-muted-foreground">Total access logs</p>
               </CardContent>
             </Card>
 
@@ -107,8 +161,12 @@ export default function VendorDashboard() {
                 <FileEdit className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-last-updated">2 days ago</div>
-                <p className="text-xs text-muted-foreground">Sep 27, 2025</p>
+                <div className="text-2xl font-bold" data-testid="text-last-updated">
+                  {profile?.updatedAt ? format(new Date(profile.updatedAt), 'MMM d, yyyy') : 'Never'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {auditLogs.length} total changes
+                </p>
               </CardContent>
             </Card>
 
@@ -119,20 +177,33 @@ export default function VendorDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-verification-status">
-                  Verified
+                  {profile?.verificationStatus === 'verified' ? 'Verified' : 'Pending'}
                 </div>
-                <p className="text-xs text-muted-foreground">All fields confirmed</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.verificationStatus === 'verified' ? 'All fields confirmed' : 'Awaiting verification'}
+                </p>
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
-              <VendorProfileCard {...vendorData} />
+              {profile && (
+                <VendorProfileCard
+                  companyName={profile.companyName}
+                  taxId={maskTaxId(profile.taxId)}
+                  address={`${profile.address}, ${profile.city}, ${profile.state} ${profile.zipCode}`}
+                  phone={profile.phone}
+                  email={profile.email}
+                  status={profile.verificationStatus as any}
+                />
+              )}
               <div className="mt-4 flex gap-2">
-                <Button className="flex-1" data-testid="button-edit-profile">
-                  Edit Profile
-                </Button>
+                <Link href="/edit" className="flex-1">
+                  <Button className="w-full" data-testid="button-edit-profile">
+                    Edit Profile
+                  </Button>
+                </Link>
                 <Button variant="outline" data-testid="button-view-public">
                   View Public Profile
                 </Button>
@@ -147,40 +218,24 @@ export default function VendorDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Company Name</span>
-                    <DataProvenanceTag
-                      source="Tax ID Lookup"
-                      method="AI Agent (Tax ID verification)"
-                      timestamp="Sep 28, 2025"
-                    />
+                {provenance.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No provenance data available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {provenance.map((prov: any) => (
+                      <div key={prov.id} className="flex items-center justify-between">
+                        <span className="text-sm font-medium capitalize">
+                          {prov.fieldName.replace(/([A-Z])/g, ' $1').trim()}
+                        </span>
+                        <DataProvenanceTag
+                          source={prov.source}
+                          method={prov.method}
+                          timestamp={prov.timeAgo || format(new Date(prov.timestamp), 'MMM d, yyyy')}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Tax ID</span>
-                    <DataProvenanceTag
-                      source="IRS Database"
-                      method="Government Registry"
-                      timestamp="Sep 28, 2025"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Address</span>
-                    <DataProvenanceTag
-                      source="USPS Verification"
-                      method="Address Validation API"
-                      timestamp="Sep 29, 2025"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Banking Info</span>
-                    <DataProvenanceTag
-                      source="Manual Entry"
-                      method="Vendor Submitted"
-                      timestamp="Sep 29, 2025"
-                    />
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -188,10 +243,10 @@ export default function VendorDashboard() {
           <Tabs defaultValue="audit" className="w-full">
             <TabsList>
               <TabsTrigger value="audit" data-testid="tab-audit-log">
-                Audit Log
+                Audit Log ({auditLogs.length})
               </TabsTrigger>
               <TabsTrigger value="access" data-testid="tab-access-log">
-                Access History
+                Access History ({accessLogs.length})
               </TabsTrigger>
             </TabsList>
             
@@ -204,11 +259,21 @@ export default function VendorDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {auditLogs.map((log) => (
-                      <AuditLogEntry key={log.id} {...log} />
-                    ))}
-                  </div>
+                  {auditLogs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No audit logs yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {auditLogs.map((log) => (
+                        <AuditLogEntry
+                          key={log.id}
+                          action={log.action}
+                          actor={log.actorName}
+                          timestamp={format(new Date(log.timestamp), 'MMM d, yyyy \'at\' h:mm a')}
+                          immutable={log.immutable}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -222,7 +287,17 @@ export default function VendorDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AccessLogTable logs={accessLogs} />
+                  {accessLogs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No access logs yet</p>
+                  ) : (
+                    <AccessLogTable logs={accessLogs.map((log: any) => ({
+                      id: log.id,
+                      accessor: log.accessorName,
+                      company: log.accessorCompany,
+                      action: log.action,
+                      timestamp: log.timeAgo || format(new Date(log.timestamp), 'MMM d, yyyy'),
+                    }))} />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

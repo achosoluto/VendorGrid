@@ -1,48 +1,215 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { VendorProfile } from "@shared/schema";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SecureFieldInput } from "@/components/SecureFieldInput";
-import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function ProfileEdit() {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
-  //todo: remove mock functionality
   const [formData, setFormData] = useState({
-    companyName: "Acme Corporation",
-    taxId: "12-3456789",
-    address: "123 Business St",
-    city: "San Francisco",
-    state: "CA",
-    zipCode: "94105",
-    phone: "+1 (555) 123-4567",
-    email: "contact@acme.com",
-    website: "https://acme.com",
-    bankName: "First National Bank",
-    accountNumber: "",
-    routingNumber: "",
+    companyName: "",
+    taxId: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
+    email: "",
+    website: "",
+    bankName: "",
+    accountNumberEncrypted: "",
+    routingNumberEncrypted: "",
+  });
+
+  // Fetch existing profile
+  const { data: profileResponse, isLoading } = useQuery<{ profile: VendorProfile | null }>({
+    queryKey: ["/api/vendor-profile"],
+    retry: false,
+  });
+  
+  const profile = profileResponse?.profile;
+
+  // Populate form with existing data
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        companyName: profile.companyName || "",
+        taxId: profile.taxId || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        zipCode: profile.zipCode || "",
+        phone: profile.phone || "",
+        email: profile.email || "",
+        website: profile.website || "",
+        bankName: profile.bankName || "",
+        accountNumberEncrypted: profile.accountNumberEncrypted || "",
+        routingNumberEncrypted: profile.routingNumberEncrypted || "",
+      });
+    }
+  }, [profile]);
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch("/api/vendor-profile", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create profile");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile Created",
+        description: "Your vendor profile has been created successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/vendor-profile"] });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/vendor-profile/${profile?.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update profile");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile Updated",
+        description: "Your changes have been saved and logged in the audit trail.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/vendor-profile"] });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleSave = () => {
-    console.log("Save triggered", formData);
-    toast({
-      title: "Profile Updated",
-      description: "Your changes have been saved and logged in the audit trail.",
-    });
+    const isCreating = !profile;
+    
+    if (isCreating) {
+      // Validate required fields for creation
+      if (!formData.companyName || !formData.taxId || !formData.address || 
+          !formData.city || !formData.state || !formData.zipCode || 
+          !formData.phone || !formData.email) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+      createMutation.mutate({
+        ...formData,
+        userId: user?.id,
+      });
+    } else {
+      // For updates, only send changed fields
+      const changes: any = {};
+      Object.keys(formData).forEach((key) => {
+        const formValue = (formData as any)[key];
+        const profileValue = (profile as any)[key];
+        if (formValue !== profileValue && key !== 'taxId') { // Tax ID shouldn't be editable after creation
+          changes[key] = formValue;
+        }
+      });
+
+      if (Object.keys(changes).length === 0) {
+        toast({
+          title: "No Changes",
+          description: "No fields were modified",
+        });
+        return;
+      }
+
+      updateMutation.mutate(changes);
+    }
   };
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined} />
+        <div className="max-w-4xl mx-auto px-8 py-16 text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isCreating = !profile;
+
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName="John Doe" />
+      <DashboardHeader userName={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined} />
       
       <main className="max-w-4xl mx-auto px-8 py-8">
         <div className="space-y-8">
@@ -54,10 +221,10 @@ export default function ProfileEdit() {
             </Link>
             <div>
               <h1 className="text-3xl font-bold" data-testid="text-page-title">
-                Edit Vendor Profile
+                {isCreating ? 'Create' : 'Edit'} Vendor Profile
               </h1>
               <p className="text-muted-foreground">
-                Update your company information
+                {isCreating ? 'Set up your company information' : 'Update your company information'}
               </p>
             </div>
           </div>
@@ -72,7 +239,7 @@ export default function ProfileEdit() {
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="company-name">Company Name</Label>
+                  <Label htmlFor="company-name">Company Name *</Label>
                   <Input
                     id="company-name"
                     value={formData.companyName}
@@ -81,7 +248,7 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tax-id">Tax ID (EIN)</Label>
+                  <Label htmlFor="tax-id">Tax ID (EIN) *</Label>
                   <Input
                     id="tax-id"
                     value={formData.taxId}
@@ -89,13 +256,16 @@ export default function ProfileEdit() {
                     placeholder="XX-XXXXXXX"
                     className="font-mono"
                     data-testid="input-tax-id"
+                    disabled={!isCreating}
                   />
-                  <p className="text-xs text-muted-foreground">Cannot be changed after verification</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isCreating ? 'This will be your unique identifier' : 'Cannot be changed after verification'}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Street Address</Label>
+                <Label htmlFor="address">Street Address *</Label>
                 <Input
                   id="address"
                   value={formData.address}
@@ -106,7 +276,7 @@ export default function ProfileEdit() {
 
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+                  <Label htmlFor="city">City *</Label>
                   <Input
                     id="city"
                     value={formData.city}
@@ -115,7 +285,7 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">State *</Label>
                   <Input
                     id="state"
                     value={formData.state}
@@ -124,7 +294,7 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="zip">ZIP Code</Label>
+                  <Label htmlFor="zip">ZIP Code *</Label>
                   <Input
                     id="zip"
                     value={formData.zipCode}
@@ -146,7 +316,7 @@ export default function ProfileEdit() {
             <CardContent className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -156,7 +326,7 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -175,6 +345,7 @@ export default function ProfileEdit() {
                   value={formData.website}
                   onChange={(e) => updateField("website", e.target.value)}
                   data-testid="input-website"
+                  placeholder="https://example.com"
                 />
               </div>
             </CardContent>
@@ -200,16 +371,16 @@ export default function ProfileEdit() {
 
               <SecureFieldInput
                 label="Account Number"
-                value={formData.accountNumber}
-                onChange={(value) => updateField("accountNumber", value)}
+                value={formData.accountNumberEncrypted}
+                onChange={(value) => updateField("accountNumberEncrypted", value)}
                 placeholder="Enter account number"
                 helperText="Used for payment processing"
               />
 
               <SecureFieldInput
                 label="Routing Number"
-                value={formData.routingNumber}
-                onChange={(value) => updateField("routingNumber", value)}
+                value={formData.routingNumberEncrypted}
+                onChange={(value) => updateField("routingNumberEncrypted", value)}
                 placeholder="Enter 9-digit routing number"
                 helperText="Your bank's routing number"
               />
@@ -217,9 +388,14 @@ export default function ProfileEdit() {
           </Card>
 
           <div className="flex gap-4">
-            <Button onClick={handleSave} className="flex-1" data-testid="button-save">
+            <Button 
+              onClick={handleSave} 
+              className="flex-1" 
+              data-testid="button-save"
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              {createMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
             <Link href="/">
               <Button variant="outline" data-testid="button-cancel">

@@ -27,11 +27,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const profile = await storage.getVendorProfileByUserId(userId);
       
-      if (!profile) {
-        return res.status(404).json({ message: "Vendor profile not found" });
-      }
-
-      res.json(profile);
+      // Return null profile instead of 404 so client can handle gracefully
+      res.json({ profile: profile || null });
     } catch (error) {
       console.error("Error fetching vendor profile:", error);
       res.status(500).json({ message: "Failed to fetch vendor profile" });
