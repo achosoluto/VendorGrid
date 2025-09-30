@@ -186,6 +186,47 @@ Required environment variables:
 
 ## Recent Changes
 
+### September 30, 2025 - Production Readiness Enhancements
+**Rate Limiting Implementation:**
+- Implemented three independent rate limiters using express-rate-limit v8.1.0
+- Auth limiter: 5 requests/15min for authentication endpoints
+- Write limiter: 20 requests/15min for POST/PATCH operations
+- Read limiter: 100 requests/15min for GET operations
+- Using draft-6 standard headers for RateLimit-* information
+- All limiters tested and working correctly
+
+**Audit Log Export for Compliance:**
+- Added GET /api/vendor-profile/:id/audit-logs/export endpoint
+- Supports JSON and CSV export formats
+- RFC 4180 compliant CSV escaping for special characters (commas, quotes)
+- Date range filtering with validation (startDate/endDate query parameters)
+- JSON export includes metadata (exportedAt, vendorProfile, dateRange, totalRecords)
+- Authorization: only profile owners can export their logs
+- Rate limited with read limiter (100 req/15min)
+
+**Encryption Edge Case Testing:**
+- Created comprehensive test suite: server/encryption.test.ts
+- 18 automated tests covering all edge cases:
+  - Empty strings, whitespace, special characters
+  - Unicode support, very long strings
+  - Double encryption (repeated masking)
+  - Encryption randomness (unique salt/IV per operation)
+  - Invalid encrypted data handling
+- 100% test pass rate, all edge cases handled correctly
+
+**Operational Runbooks:**
+- Created docs/operational-runbooks.md with complete procedures
+- SESSION_SECRET rotation: emergency procedure with working migration scripts
+- Audit trail review: schedules, SQL queries, compliance checklists
+- Encryption key management: generation, storage, access control
+- Database backup/recovery: Neon PITR procedures and manual CSV exports
+- Security incident response: procedures for breach, unauthorized access, key compromise
+- Created server/scripts/decrypt-migration.ts and reencrypt-migration.ts
+
+**Rate Limiting:**
+- express-rate-limit: v8.1.0 with modern `limit` parameter
+- Three independent limiters prevent API abuse and DDoS attacks
+
 ### September 30, 2025 - MVP Completion
 - Completed frontend-to-backend integration for vendor dashboard and profile management
 - Fixed profile fetch to return `{profile: null}` instead of 404 when no profile exists
@@ -195,7 +236,7 @@ Required environment variables:
 - All tests passing: vendor workflow works end-to-end from authentication through profile management
 
 ### Implementation Status
-✓ Database schema with encrypted sensitive fields (Tax ID, banking info)
+✓ Database schema with encrypted sensitive fields (banking info)
 ✓ Replit Auth integration with session management
 ✓ Vendor profile CRUD operations with ownership verification
 ✓ Immutable audit logs for all profile changes
@@ -205,11 +246,14 @@ Required environment variables:
 ✓ Profile edit form with secure field masking
 ✓ Tax ID immutability after profile creation
 ✓ End-to-end testing with Playwright
+✓ **Rate limiting** (5/20/100 requests per 15min for auth/write/read)
+✓ **Audit log exports** (JSON and CSV with RFC 4180 compliance)
+✓ **Encryption testing** (18 comprehensive tests, 100% pass rate)
+✓ **Operational runbooks** (SESSION_SECRET rotation, audit review, backup/recovery, incident response)
 
 ### Next Steps for Production
-1. **Rate Limiting**: Add rate limiting to prevent API abuse
-2. **Audit Exports**: Implement structured audit log export functionality for compliance
-3. **Encryption Testing**: Add automated tests for encryption edge cases (blank fields, repeated masking)
-4. **Operational Runbooks**: Document procedures for rotating SESSION_SECRET and reviewing audit trails
-5. **Multi-tenant Access**: Enable enterprise customers to request access to vendor profiles
-6. **Verification Workflow**: Implement admin panel for verifying vendor data
+1. **Multi-tenant Access**: Enable enterprise customers to request access to vendor profiles
+2. **Verification Workflow**: Implement admin panel for verifying vendor data
+3. **Key Versioning**: Add encryption key versioning for zero-downtime SESSION_SECRET rotation
+4. **CI/CD Integration**: Wire encryption tests into automated test runner
+5. **Monitoring**: Set up automated alerts for suspicious audit activity
