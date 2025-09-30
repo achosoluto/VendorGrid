@@ -15,79 +15,178 @@ This document provides step-by-step procedures for critical operational tasks in
 ## SESSION_SECRET Rotation
 
 ### Purpose
-The `SESSION_SECRET` is used for both session encryption and data encryption (banking information, Tax IDs). Regular rotation reduces the risk of key compromise and is a security best practice.
+The `SESSION_SECRET` is used for both session encryption and data encryption (banking information). 
 
-### Rotation Schedule
-- **Recommended**: Every 90 days
-- **Mandatory**: Immediately after any suspected security incident
-- **Compliance**: Required by SOC 2 and PCI DSS standards
+### Important: Current Architecture Limitations
+⚠️ **The current system does NOT support seamless SESSION_SECRET rotation** because:
+1. All encrypted data uses the same key
+2. Changing the key breaks decryption of existing data
+3. Rotation requires a database-wide re-encryption migration
 
-### Pre-Rotation Checklist
-- [ ] Schedule maintenance window (recommended: off-peak hours)
-- [ ] Notify users of planned downtime (15-30 minutes)
-- [ ] Create database backup
-- [ ] Document current `SESSION_SECRET` value in secure vault
-- [ ] Generate new strong secret (32+ random characters)
+### Session Encryption vs Data Encryption
+- **Session encryption**: Sessions naturally expire (handled by express-session)
+- **Data encryption**: Banking information persists indefinitely and requires the same key
 
-### Rotation Procedure
+### When Rotation is Required
+- **Suspected key compromise**: Immediate emergency procedure required
+- **Regulatory requirement**: Only if specifically mandated by auditor
 
-#### Step 1: Export Encrypted Data
+### Emergency Rotation Procedure (Key Compromise)
+
+⚠️ **WARNING**: This procedure requires full application downtime and database migration.
+
+#### Prerequisites
+- Database backup completed and verified
+- Maintenance window scheduled (1-2 hours minimum)
+- All users notified of downtime
+- New SESSION_SECRET generated: `openssl rand -base64 32`
+
+#### Step 1: Create Maintenance Window
 ```bash
-# Run the data migration script to decrypt all encrypted fields
-tsx scripts/decrypt-all-data.ts > encrypted-data-backup.json
+# Stop application
+# Display maintenance page to users
 ```
 
-#### Step 2: Update Environment Variable
+#### Step 2: Export Encrypted Data (Optional Backup)
 ```bash
-# In Replit Secrets or your environment management system:
-# 1. Save old SESSION_SECRET as SESSION_SECRET_OLD
-# 2. Update SESSION_SECRET with new value
-# 3. Restart application
+# Optional: Create CSV backup of encrypted data before decryption
+# This allows you to verify the data hasn't changed during migration
+psql $DATABASE_URL -c "\COPY (
+  SELECT id, account_number_encrypted, routing_number_encrypted
+  FROM vendor_profiles
+  WHERE account_number_encrypted IS NOT NULL
+) TO './encrypted-data-backup.csv' WITH CSV HEADER"
 ```
 
-#### Step 3: Re-encrypt Data with New Key
-```bash
-# Run the re-encryption script
-tsx scripts/reencrypt-data.ts encrypted-data-backup.json
+**Note**: This is optional - the decrypt script (next step) will read directly from database.
+
+#### Step 3: Decrypt Data Using Current Key
+```typescript
+// server/scripts/decrypt-migration.ts
+import { Pool } from '@neondatabase/serverless';
+import { decrypt } from '../encryption';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function decryptAll() {
+  const result = await pool.query(`
+    SELECT id, account_number_encrypted, routing_number_encrypted
+    FROM vendor_profiles
+    WHERE account_number_encrypted IS NOT NULL
+  `);
+
+  const decrypted = result.rows.map(row => ({
+    id: row.id,
+    accountNumber: decrypt(row.account_number_encrypted),
+    routingNumber: decrypt(row.routing_number_encrypted),
+  }));
+
+  console.log(JSON.stringify(decrypted, null, 2));
+}
+
+decryptAll();
 ```
 
-#### Step 4: Verification
+Run:
 ```bash
-# Test decryption of sample vendor profile
+tsx server/scripts/decrypt-migration.ts > decrypted-data.json
+# Verify output contains plaintext banking data
+# Store this file SECURELY - it contains sensitive data
+```
+
+#### Step 4: Update SESSION_SECRET
+```bash
+# In Replit Secrets:
+# 1. Update SESSION_SECRET with new value
+# 2. Restart application (do NOT make public yet)
+```
+
+#### Step 5: Re-encrypt Data with New Key
+```typescript
+// server/scripts/reencrypt-migration.ts
+import { Pool } from '@neondatabase/serverless';
+import { encrypt } from '../encryption';
+import * as fs from 'fs';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const decryptedData = JSON.parse(fs.readFileSync('decrypted-data.json', 'utf8'));
+
+async function reencryptAll() {
+  for (const record of decryptedData) {
+    const accountEncrypted = encrypt(record.accountNumber);
+    const routingEncrypted = encrypt(record.routingNumber);
+    
+    await pool.query(`
+      UPDATE vendor_profiles
+      SET account_number_encrypted = $1,
+          routing_number_encrypted = $2
+      WHERE id = $3
+    `, [accountEncrypted, routingEncrypted, record.id]);
+  }
+  console.log(`Re-encrypted ${decryptedData.length} records`);
+}
+
+reencryptAll();
+```
+
+Run:
+```bash
+tsx server/scripts/reencrypt-migration.ts
+```
+
+#### Step 6: Verification
+```bash
+# Test sample vendor profile decryption
+psql $DATABASE_URL -c "SELECT id FROM vendor_profiles LIMIT 1;"
+# Use profile ID in API test
+
 curl -H "Authorization: Bearer $TOKEN" \
   https://your-app.replit.app/api/vendor-profile/$PROFILE_ID
+
+# Verify banking information displays correctly
 ```
 
-#### Step 5: Clean Up
+#### Step 7: Clean Up
 ```bash
-# Securely delete temporary backup
-shred -u encrypted-data-backup.json
+# Securely delete temporary files
+shred -u decrypted-data.json
+shred -u encrypted-data.csv
 
-# Remove SESSION_SECRET_OLD from environment after 24 hours
-# (Keep for rollback window)
+# Clear old SESSION_SECRET from secure vault after 7 days
+# (Keep for emergency rollback)
+```
+
+#### Step 8: Resume Operations
+```bash
+# Make application public
+# Monitor error logs for decryption failures
+# Send all-clear notification to users
 ```
 
 ### Rollback Procedure
-If issues occur during rotation:
+If decryption failures occur:
 
-1. **Restore old key**:
-   ```bash
-   # Set SESSION_SECRET back to SESSION_SECRET_OLD
-   # Restart application
-   ```
+1. **Stop application immediately**
+2. **Restore SESSION_SECRET to old value**
+3. **Restart application**
+4. **Restore database from pre-rotation backup if data was corrupted**
+5. **Schedule post-mortem to determine failure cause**
 
-2. **Verify application functionality**:
-   ```bash
-   # Test login and profile access
-   ```
+### Prevention: Key Versioning (Future Enhancement)
+To enable seamless rotation, implement:
+1. Key versioning system (store key version with each encrypted field)
+2. Multi-key decryption support (support old keys for decryption)
+3. Lazy re-encryption (re-encrypt on next write with new key)
 
-3. **Schedule retry**: Plan new rotation attempt after investigating failure
+This requires architectural changes and is recommended for future releases.
 
-### Monitoring After Rotation
-- Check error logs for decryption failures: `grep "decrypt" /var/log/app.log`
-- Monitor user login success rate
-- Verify audit logs are being created properly
-- Test full vendor profile workflow
+### Session-Only Rotation (Safe)
+For session encryption rotation without data re-encryption:
+
+1. **Rotate key**: Update SESSION_SECRET
+2. **Impact**: All users logged out (sessions invalidated)
+3. **No data migration needed**: Banking data unaffected
+4. **Downtime**: Minimal (application restart only)
 
 ---
 
@@ -272,43 +371,163 @@ openssl rand -base64 32
 
 ## Database Backup and Recovery
 
-### Backup Schedule
-- **Continuous**: Neon PostgreSQL automatic backups (point-in-time recovery)
-- **Manual**: Before major deployments or migrations
-- **Export**: Weekly audit log exports for compliance
+### Backup Strategy
 
-### Manual Backup Procedure
+#### Automatic Backups (Neon)
+Neon PostgreSQL provides:
+- **Continuous backups**: Automatic WAL archiving
+- **Point-in-time recovery (PITR)**: Restore to any second within retention period
+- **Retention**: Depends on Neon plan (7-30 days typically)
+- **Access**: Via Neon Console or API
+
+#### Manual Export Backups
+For compliance and long-term retention:
+
+**Export All Tables** (recommended before major changes):
 ```bash
-# Export encrypted vendor data
-pg_dump $DATABASE_URL -t vendor_profiles > backup-vendor-profiles-$(date +%Y-%m-%d).sql
+# Set variables
+BACKUP_DATE=$(date +%Y-%m-%d-%H%M%S)
+BACKUP_DIR="./backups/$BACKUP_DATE"
+mkdir -p "$BACKUP_DIR"
 
-# Export audit logs
-pg_dump $DATABASE_URL -t audit_logs > backup-audit-logs-$(date +%Y-%m-%d).sql
+# Export each table
+psql $DATABASE_URL -c "\COPY vendor_profiles TO '$BACKUP_DIR/vendor_profiles.csv' CSV HEADER"
+psql $DATABASE_URL -c "\COPY audit_logs TO '$BACKUP_DIR/audit_logs.csv' CSV HEADER"
+psql $DATABASE_URL -c "\COPY access_logs TO '$BACKUP_DIR/access_logs.csv' CSV HEADER"
+psql $DATABASE_URL -c "\COPY data_provenance TO '$BACKUP_DIR/data_provenance.csv' CSV HEADER"
+psql $DATABASE_URL -c "\COPY users TO '$BACKUP_DIR/users.csv' CSV HEADER"
 
-# Compress and encrypt backup
-tar czf - backup-*.sql | \
-  openssl enc -aes-256-cbc -salt -pbkdf2 > \
-  backup-$(date +%Y-%m-%d).tar.gz.enc
+# Create backup metadata
+echo "Backup Date: $BACKUP_DATE" > "$BACKUP_DIR/metadata.txt"
+echo "Database: $(psql $DATABASE_URL -t -c 'SELECT current_database()')" >> "$BACKUP_DIR/metadata.txt"
+echo "Total Records:" >> "$BACKUP_DIR/metadata.txt"
+psql $DATABASE_URL -c "SELECT 'vendor_profiles' as table_name, COUNT(*) FROM vendor_profiles
+                       UNION ALL SELECT 'audit_logs', COUNT(*) FROM audit_logs
+                       UNION ALL SELECT 'users', COUNT(*) FROM users;"
+
+# Compress (do NOT encrypt - data already encrypted in database)
+tar czf "backup-$BACKUP_DATE.tar.gz" -C ./backups "$BACKUP_DATE"
 ```
 
-### Recovery Procedure
-
-#### Full Database Recovery
+**Compliance Audit Exports** (quarterly):
 ```bash
-# 1. Stop application
-# 2. Point Neon connection to backup timestamp
-# 3. Verify data integrity
-# 4. Resume application
+# Export audit logs as JSON for compliance team
+QUARTER="2025-Q4"
+START_DATE="2025-10-01"
+END_DATE="2025-12-31"
+
+psql $DATABASE_URL -c "
+  COPY (
+    SELECT 
+      al.*,
+      vp.company_name,
+      vp.tax_id
+    FROM audit_logs al
+    JOIN vendor_profiles vp ON al.vendor_profile_id = vp.id
+    WHERE al.timestamp BETWEEN '$START_DATE' AND '$END_DATE'
+    ORDER BY al.timestamp
+  ) TO STDOUT WITH (FORMAT csv, HEADER true)
+" > "audit-logs-$QUARTER.csv"
 ```
 
-#### Partial Data Recovery
-```bash
-# Restore specific table from backup
-psql $DATABASE_URL < backup-vendor-profiles-2025-09-30.sql
+### Recovery Procedures
 
-# Verify restored data
-psql $DATABASE_URL -c "SELECT COUNT(*) FROM vendor_profiles;"
+#### Point-in-Time Recovery (Neon PITR)
+
+**When to use**: Accidental data deletion, corruption, or to recover from security incident
+
+**Procedure**:
+1. **Identify recovery timestamp**:
+   ```sql
+   -- Find last known good state
+   SELECT MAX(timestamp) FROM audit_logs WHERE action = 'claimed vendor profile';
+   ```
+
+2. **Create recovery branch** (via Neon Console):
+   - Navigate to Neon Console
+   - Select database
+   - Click "Restore" or "Create Branch"
+   - Choose timestamp (e.g., "2025-09-30 14:30:00")
+   - Name: "recovery-[date]-[incident]"
+
+3. **Update connection string** (temporarily):
+   ```bash
+   # In Replit Secrets, temporarily update DATABASE_URL
+   # Point to recovery branch connection string
+   # Restart application
+   ```
+
+4. **Verify data**:
+   ```sql
+   -- Check vendor profiles count
+   SELECT COUNT(*) FROM vendor_profiles;
+   
+   -- Verify specific records
+   SELECT * FROM vendor_profiles WHERE company_name = 'Expected Company';
+   
+   -- Check audit logs
+   SELECT COUNT(*) FROM audit_logs;
+   ```
+
+5. **Merge or promote**:
+   - If verified: Promote recovery branch to primary
+   - If still issues: Create new recovery point
+   - Document incident and resolution
+
+#### Manual Restore from CSV Backup
+
+**When to use**: Recovery beyond PITR retention, compliance requirements
+
+**Procedure**:
+```bash
+# Extract backup
+tar xzf backup-2025-09-30-120000.tar.gz
+
+# Restore vendor profiles (example)
+psql $DATABASE_URL -c "
+  CREATE TEMP TABLE vendor_profiles_backup (LIKE vendor_profiles INCLUDING ALL);
+  
+  \COPY vendor_profiles_backup FROM './2025-09-30-120000/vendor_profiles.csv' CSV HEADER;
+  
+  -- Verify count
+  SELECT COUNT(*) FROM vendor_profiles_backup;
+  
+  -- If verified, replace or merge data
+  -- CAREFUL: This can overwrite current data
+  -- INSERT INTO vendor_profiles SELECT * FROM vendor_profiles_backup WHERE ...
+"
 ```
+
+#### Emergency: Complete Database Recovery
+
+**When to use**: Catastrophic failure, complete data loss
+
+1. **Contact Neon Support** immediately
+2. **Stop all write operations** to prevent further data loss
+3. **Restore from most recent backup**:
+   - PITR if within retention
+   - Manual backup otherwise
+4. **Verify data integrity**:
+   ```sql
+   -- Run integrity checks
+   SELECT COUNT(*) FROM users;
+   SELECT COUNT(*) FROM vendor_profiles;
+   SELECT COUNT(*) FROM audit_logs;
+   
+   -- Verify relationships
+   SELECT COUNT(*) FROM vendor_profiles vp
+   LEFT JOIN users u ON vp.user_id = u.id
+   WHERE u.id IS NULL; -- Should be 0
+   ```
+5. **Resume operations** only after full verification
+
+### Backup Best Practices
+
+1. **Schedule**: Daily automated backups during low-traffic periods
+2. **Storage**: Store backups in separate location from database (e.g., S3)
+3. **Retention**: Keep daily for 7 days, weekly for 4 weeks, monthly for 1 year
+4. **Testing**: Quarterly restore tests to verify backup validity
+5. **Documentation**: Log all backup and restore operations in runbook changelog
 
 ---
 
