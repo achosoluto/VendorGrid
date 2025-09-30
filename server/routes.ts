@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertVendorProfileSchema, updateVendorProfileSchema } from "@shared/schema";
@@ -9,8 +10,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Rate limiting middleware
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 5, // Limit each IP to 5 auth attempts per windowMs
+    message: "Too many authentication attempts, please try again later.",
+    standardHeaders: 'draft-6', // Use draft-6 for separate RateLimit-* headers
+    legacyHeaders: false,
+  });
+
+  const writeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 20, // Limit each IP to 20 write operations per windowMs
+    message: "Too many write requests, please try again later.",
+    standardHeaders: 'draft-6',
+    legacyHeaders: false,
+  });
+
+  const readLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 read requests per windowMs
+    message: "Too many requests, please try again later.",
+    standardHeaders: 'draft-6',
+    legacyHeaders: false,
+  });
+
+  // Auth routes (with stricter rate limiting)
+  app.get('/api/auth/user', authLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -22,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get vendor profile for logged-in user
-  app.get('/api/vendor-profile', isAuthenticated, async (req: any, res) => {
+  app.get('/api/vendor-profile', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const profile = await storage.getVendorProfileByUserId(userId);
@@ -35,8 +61,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create vendor profile
-  app.post('/api/vendor-profile', isAuthenticated, async (req: any, res) => {
+  // Create vendor profile (with write rate limiting)
+  app.post('/api/vendor-profile', writeLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -88,8 +114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update vendor profile
-  app.patch('/api/vendor-profile/:id', isAuthenticated, async (req: any, res) => {
+  // Update vendor profile (with write rate limiting)
+  app.patch('/api/vendor-profile/:id', writeLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.claims.sub;
@@ -145,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs for vendor profile
-  app.get('/api/vendor-profile/:id/audit-logs', isAuthenticated, async (req: any, res) => {
+  app.get('/api/vendor-profile/:id/audit-logs', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.claims.sub;
@@ -173,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get access logs for vendor profile
-  app.get('/api/vendor-profile/:id/access-logs', isAuthenticated, async (req: any, res) => {
+  app.get('/api/vendor-profile/:id/access-logs', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.claims.sub;
@@ -201,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get data provenance for vendor profile
-  app.get('/api/vendor-profile/:id/provenance', isAuthenticated, async (req: any, res) => {
+  app.get('/api/vendor-profile/:id/provenance', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.claims.sub;
@@ -237,30 +263,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-// Admin route to trigger Canadian data ingestion
-  app.post('/api/admin/ingest-canadian-data', isAuthenticated, async (req: any, res) => {
-    try {
-      // Note: In production, add proper admin role check here
-      const userId = req.user.claims.sub;
-      
-      // Import the ingestion function dynamically to avoid loading issues
-      const { runCanadianIngestion } = await import('./dataIngestion/index');
-      
-      // Run ingestion in background
-      runCanadianIngestion()
-        .then(() => {
-          console.log('Canadian data ingestion completed successfully');
-        })
-        .catch((error) => {
-          console.error('Canadian data ingestion failed:', error);
-        });
-      
-      res.json({ 
-        message: "Canadian data ingestion started", 
-        status: "processing" 
-      });
-    } catch (error) {
-      console.error("Error starting Canadian ingestion:", error);
-      res.status(500).json({ message: "Failed to start ingestion" });
-    }
-  });
