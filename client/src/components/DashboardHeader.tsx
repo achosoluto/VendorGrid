@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Shield, LogOut, Settings, User } from "lucide-react";
-import Link from "next/link";
+import { Link } from "wouter";
 
 interface DashboardHeaderProps {
   userName?: string;
