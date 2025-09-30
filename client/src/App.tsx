@@ -21,6 +21,7 @@ function Router() {
         <>
           <Route path="/" component={VendorDashboard} />
           <Route path="/edit" component={ProfileEdit} />
+          <Route path="/demo" component={() => import('./pages/DataIngestionDemo')} />
         </>
       )}
       <Route component={NotFound} />

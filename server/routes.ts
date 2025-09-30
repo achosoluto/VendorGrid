@@ -297,6 +297,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Invalid format
+
+
+  // Data ingestion demo endpoints
+  app.post('/api/data-ingestion/start', writeLimiter, isAuthenticated, async (req: any, res) => {
+    try {
+      // Simulate starting the ingestion pipeline
+      res.json({ message: 'Ingestion pipeline started', jobId: `job_${Date.now()}` });
+    } catch (error) {
+      console.error("Error starting ingestion:", error);
+      res.status(500).json({ message: "Failed to start ingestion" });
+    }
+  });
+
+  app.get('/api/data-ingestion/status', readLimiter, isAuthenticated, async (req: any, res) => {
+    try {
+      // Simulate real-time ingestion status
+      const mockStatus = {
+        isRunning: Math.random() > 0.7, // 30% chance it's running
+        processed: Math.floor(Math.random() * 3) + 1,
+        errors: [],
+        currentSource: 'Corporations Canada',
+        totalSources: 3,
+        newProfiles: Math.floor(Math.random() * 50) + 10,
+        updatedProfiles: Math.floor(Math.random() * 30) + 5,
+        verificationsPending: Math.floor(Math.random() * 20) + 3
+      };
+      
+      res.json(mockStatus);
+    } catch (error) {
+      console.error("Error fetching ingestion status:", error);
+      res.status(500).json({ message: "Failed to fetch status" });
+    }
+  });
+
+  app.get('/api/data-ingestion/recent-activities', readLimiter, isAuthenticated, async (req: any, res) => {
+    try {
+      const mockActivities = [
+        {
+          id: '1',
+          type: 'profile_created',
+          companyName: 'Maple Tech Solutions Inc.',
+          taxId: '123456789',
+          source: 'Corporations Canada',
+          timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+          status: 'completed'
+        },
+        {
+          id: '2',
+          type: 'profile_updated',
+          companyName: 'Northwind Trading Ltd.',
+          taxId: '987654321',
+          source: 'AI Verification Agent',
+          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          status: 'completed'
+        },
+        {
+          id: '3',
+          type: 'verification_pending',
+          companyName: 'Aurora Industries Corp.',
+          taxId: '456789123',
+          source: 'Ontario Business Registry',
+          timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+          status: 'pending'
+        }
+      ];
+      
+      res.json(mockActivities);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
       return res.status(400).json({ message: "Invalid format. Use 'json' or 'csv'" });
     } catch (error) {
       console.error("Error exporting audit logs:", error);

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { AuditLogEntry } from "@/components/AuditLogEntry";
 import { AccessLogTable } from "@/components/AccessLogTable";
 import { DataProvenanceTag } from "@/components/DataProvenanceTag";
-import { Eye, FileEdit, Shield, Plus } from "lucide-react";
+import { Eye, FileEdit, Shield, Plus, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
@@ -204,9 +204,12 @@ export default function VendorDashboard() {
                     Edit Profile
                   </Button>
                 </Link>
-                <Button variant="outline" data-testid="button-view-public">
-                  View Public Profile
-                </Button>
+                <Link href="/demo">
+                  <Button variant="outline" className="flex items-center gap-2" data-testid="button-view-demo">
+                    <Zap className="w-4 h-4" />
+                    Live Demo
+                  </Button>
+                </Link>
               </div>
             </div>
 

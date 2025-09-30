@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Shield, LogOut, Settings, User } from "lucide-react";
+import Link from "next/link";
 
 interface DashboardHeaderProps {
   userName?: string;
@@ -23,8 +24,16 @@ export function DashboardHeader({ userName = "Vendor User" }: DashboardHeaderPro
           <Shield className="w-6 h-6 text-primary" />
           <span className="text-xl font-semibold" data-testid="text-logo">Vendor Network</span>
         </div>
-        
+
         <div className="flex items-center gap-4">
+          <nav className="flex gap-6">
+            <Link href="/" className="text-foreground hover:text-primary transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/demo" className="text-foreground hover:text-primary transition-colors">
+              Live Demo
+            </Link>
+          </nav>
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
