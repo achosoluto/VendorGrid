@@ -237,3 +237,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+// Admin route to trigger Canadian data ingestion
+  app.post('/api/admin/ingest-canadian-data', isAuthenticated, async (req: any, res) => {
+    try {
+      // Note: In production, add proper admin role check here
+      const userId = req.user.claims.sub;
+      
+      // Import the ingestion function dynamically to avoid loading issues
+      const { runCanadianIngestion } = await import('./dataIngestion/index');
+      
+      // Run ingestion in background
+      runCanadianIngestion()
+        .then(() => {
+          console.log('Canadian data ingestion completed successfully');
+        })
+        .catch((error) => {
+          console.error('Canadian data ingestion failed:', error);
+        });
+      
+      res.json({ 
+        message: "Canadian data ingestion started", 
+        status: "processing" 
+      });
+    } catch (error) {
+      console.error("Error starting Canadian ingestion:", error);
+      res.status(500).json({ message: "Failed to start ingestion" });
+    }
+  });

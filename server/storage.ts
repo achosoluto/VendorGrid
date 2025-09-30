@@ -219,6 +219,47 @@ export class DatabaseStorage implements IStorage {
       .from(dataProvenance)
       .where(eq(dataProvenance.vendorProfileId, vendorId));
   }
+
+  async getVendorProfileByTaxId(taxId: string): Promise<VendorProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.taxId, taxId));
+    
+    if (profile) {
+      // Decrypt sensitive fields
+      return {
+        ...profile,
+        accountNumberEncrypted: profile.accountNumberEncrypted 
+          ? decrypt(profile.accountNumberEncrypted) 
+          : null,
+        routingNumberEncrypted: profile.routingNumberEncrypted 
+          ? decrypt(profile.routingNumberEncrypted) 
+          : null,
+      };
+    }
+    return undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();
+async getVendorProfileByTaxId(taxId: string): Promise<VendorProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.taxId, taxId));
+    
+    if (profile) {
+      // Decrypt sensitive fields
+      return {
+        ...profile,
+        accountNumberEncrypted: profile.accountNumberEncrypted 
+          ? decrypt(profile.accountNumberEncrypted) 
+          : null,
+        routingNumberEncrypted: profile.routingNumberEncrypted 
+          ? decrypt(profile.routingNumberEncrypted) 
+          : null,
+      };
+    }
+    return undefined;
+  }
