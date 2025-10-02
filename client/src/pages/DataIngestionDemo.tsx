@@ -60,7 +60,7 @@ export default function DataIngestionDemo() {
   });
 
   // Poll ingestion status
-  const { data: statusData } = useQuery({
+  const { data: statusData } = useQuery<IngestionStatus>({
     queryKey: ['/api/data-ingestion/status'],
     refetchInterval: ingestionStatus.isRunning ? 2000 : false,
     enabled: ingestionStatus.isRunning
