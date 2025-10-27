@@ -1,0 +1,51 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+🔓 Using MOCK authentication (development mode)
+✅ Mock user created/updated in database
+5:59:27 PM [express] serving on port 3000
+📊 Starting Government Data Integration monitoring...
+[36m[2025-10-03T23:59:27.238Z] INFO: Government Data Integration monitoring started[0m
+5:59:27 PM [express] 🔍 Government Data Integration monitoring active
+5:59:40 PM [express] GET /api/system/status 200 in 3ms :: {"dataQualityScore":100,"activeAlertsCount…
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+5:59:49 PM [express] GET /api/auth/user 304 in 0ms :: {"id":"dev-user-123","email":"developer@vendor…
+5:59:49 PM [express] GET /api/vendor-profile 304 in 3ms :: {"profile":null}
+6:01:00 p.m. [vite] hmr update /src/pages/ProfileEdit.tsx, /src/index.css?v=7zR4z_VDIDmKbmzd3O3RB
+6:01:01 PM [express] POST /api/data-ingestion/start 200 in 17ms
+6:01:02 PM [express] POST /api/data-ingestion/start 200 in 12ms
+6:01:09 p.m. [vite] hmr update /src/pages/ProfileEdit.tsx, /src/index.css?v=7zR4z_VDIDmKbmzd3O3RB
+6:01:31 p.m. [vite] hmr update /src/pages/ProfileEdit.tsx, /src/index.css?v=7zR4z_VDIDmKbmzd3O3RB
+6:01:47 p.m. [vite] hmr update /src/pages/ProfileEdit.tsx, /src/index.css?v=7zR4z_VDIDmKbmzd3O3RB
+9:03:04 a.m. [vite] page reload src/types/analytics.ts
+9:03:04 a.m. [vite] page reload src/hooks/useAnalytics.ts
+9:03:04 a.m. [vite] page reload src/services/analyticsApi.ts
+9:03:06 a.m. [vite] page reload src/components/dashboard/GovernmentDataDashboard.tsx
+9:03:07 a.m. [vite] page reload src/components/dashboard/DashboardComponents.tsx
+9:03:07 a.m. [vite] page reload src/components/dashboard/OverviewCards.tsx
+6:48:09 PM [express] GET /api/auth/user 304 in 1ms :: {"id":"dev-user-123","email":"developer@vendor…
+6:50:46 PM [express] GET /api/auth/user 304 in 1ms :: {"id":"dev-user-123","email":"developer@vendor…
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: Connection terminated unexpectedly
+    at Connection.<anonymous> (/Users/acmac/Dropbox/Obsidian Vault/10_Projects/VendorGrid/node_modules/pg/lib/client.js:136:73)
+    at Object.onceWrapper (node:events:638:28)
+    at Connection.emit (node:events:524:28)
+    at Socket.<anonymous> (/Users/acmac/Dropbox/Obsidian Vault/10_Projects/VendorGrid/node_modules/pg/lib/connection.js:62:12)
+    at Socket.emit (node:events:524:28)
+    at TCP.<anonymous> (node:net:343:12)
+Emitted 'error' event on Client instance at:
+    at Client._handleErrorEvent (/Users/acmac/Dropbox/Obsidian Vault/10_Projects/VendorGrid/node_modules/pg/lib/client.js:350:10)
+    at Connection.<anonymous> (/Users/acmac/Dropbox/Obsidian Vault/10_Projects/VendorGrid/node_modules/pg/lib/client.js:154:16)
+    at Object.onceWrapper (node:events:638:28)
+    [... lines matching original stack trace ...]
+    at TCP.<anonymous> (node:net:343:12)
+
+Node.js v20.19.2
