@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-11-11T06:24:19.289Z",
+  "checks": {
+    "systemHealth": {
+      "passed": true,
+      "message": "System health within acceptable limits"
+    },
+    "dependencies": {
+      "passed": false,
+      "message": "Keycloak infrastructure not accessible"
+    },
+    "backups": {
+      "passed": true,
+      "message": "Backup created: ./logs/migration-execution/pre-migration-backup-1762842259347.json"
+    },
+    "monitoring": {
+      "passed": true,
+      "message": "All monitoring systems validated"
+    },
+    "rollback": {
+      "passed": false,
+      "message": "Rollback validation failed"
+    }
+  }
+}

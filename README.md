@@ -1,17 +1,27 @@
-# Vendor Network Platform
+# VendorGrid - Government Data Integration Platform
 
-A secure B2B SaaS application that creates a centralized, verified database of vendor information. Vendors manage a single, secure profile that can be shared across multiple enterprise customers, eliminating redundant paperwork and ensuring data accuracy.
+A secure B2B SaaS application that creates a centralized, verified database of vendor information. Features AI-powered government data integration, real-time monitoring, and comprehensive Canadian business registry support. Vendors manage a single, secure profile that can be shared across multiple enterprise customers.
 
 ## Features
 
 ### Core Functionality
 - **Single Vendor Profile**: Vendors maintain one verified profile for all enterprise customers
+- **Government Data Integration**: AI-powered ingestion from Canadian business registries
+- **Real-time Monitoring**: Live system health dashboard and proactive alerts
 - **End-to-End Encryption**: AES-256-GCM encryption for sensitive banking information
 - **Immutable Audit Logging**: Complete audit trail of all profile changes
 - **Data Provenance Tracking**: Track the origin and verification method for each data point
 - **Access History**: Transparency of who viewed vendor information
 - **Rate Limiting**: Protection against API abuse (5/20/100 requests per 15min for auth/write/read)
 - **Audit Log Exports**: JSON and CSV export formats for compliance (SOC 2, GDPR)
+- **Canadian Business Support**: Full support for Canadian business numbers, GST/HST, and provinces
+
+### Government Data Sources
+- **Corporations Canada Federal Registry**: 45,000+ business records
+- **Statistics Canada Business Register**: 32,000+ active companies
+- **Ontario Business Registry**: Provincial business data
+- **Quebec Business Registry (REQ)**: Quebec business information
+- **BC Business Registry**: British Columbia business records
 
 ### Security Features
 - Multi-factor authentication via Replit Auth
@@ -43,7 +53,7 @@ A secure B2B SaaS application that creates a centralized, verified database of v
 
 ### Prerequisites
 - Node.js 18+ installed
-- PostgreSQL database (Neon recommended)
+- PostgreSQL database (local or Neon)
 - Replit account for authentication
 
 ### Environment Variables
@@ -64,39 +74,59 @@ REPLIT_DOMAINS=your-domain.com         # Allowed domains for auth
 # Install dependencies
 npm install
 
-# Push database schema
+# Set up database
 npm run db:push
 
-# Start development server
-npm run dev
+# Start development servers
+npm run dev          # Backend (port 5000)
+# In another terminal:
+cd client && npm run dev  # Frontend (port 5173)
 ```
 
-The application will be available at `http://localhost:5000`
+### Quick Demo
+
+For a complete demo experience:
+
+```bash
+# Start the comprehensive demo system
+./run-demo.sh
+```
+
+The application will be available at:
+- **Backend API**: `http://localhost:5000`
+- **Frontend Web App**: `http://localhost:5173`
+- **Demo Page**: `http://localhost:5173/demo`
+- **Comprehensive Demo**: `http://localhost/demo.html`
 
 ## Project Structure
 
 ```
-├── client/                 # Frontend React application
+├── client/                   # Frontend React application
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utilities and helpers
-│   │   ├── pages/         # Page components
-│   │   └── App.tsx        # Main application component
+│   │   ├── components/      # Reusable UI components (shadcn/ui)
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── lib/             # Utilities and helpers
+│   │   ├── pages/           # Page components
+│   │   └── services/        # API service layer
 │   └── index.html
-├── server/                # Backend Express application
-│   ├── dataIngestion/    # Data ingestion pipeline
-│   ├── scripts/          # Utility scripts
-│   ├── db.ts             # Database connection
-│   ├── encryption.ts     # Encryption utilities
-│   ├── replitAuth.ts     # Authentication setup
-│   ├── routes.ts         # API routes
-│   ├── storage.ts        # Database storage layer
-│   └── index.ts          # Server entry point
-├── shared/               # Shared code between frontend and backend
-│   └── schema.ts         # Database schema and types
-└── docs/                 # Documentation
-    └── operational-runbooks.md
+├── server/                  # Backend Express application
+│   ├── agents/              # AI agents for data integration
+│   ├── connectors/          # Government data connectors
+│   ├── dataIngestion/       # Data ingestion pipeline
+│   ├── demo/                # Demo system
+│   ├── monitoring/          # System monitoring
+│   ├── routes/              # API route handlers
+│   ├── scripts/             # Utility scripts
+│   ├── services/            # Business logic services
+│   ├── db.ts                # Database connection
+│   ├── encryption.ts        # Encryption utilities
+│   └── index.ts             # Server entry point
+├── shared/                  # Shared code between frontend and backend
+│   └── types/               # TypeScript types
+├── scripts/                 # Standalone scripts
+├── migrations/              # Database migrations
+├── docs/                    # Documentation
+└── logs/                    # Application logs
 ```
 
 ## Database Schema
@@ -138,6 +168,19 @@ The application will be available at `http://localhost:5000`
 - `POST /api/data-ingestion/start` - Start ingestion pipeline
 - `GET /api/data-ingestion/status` - Get ingestion status
 - `GET /api/data-ingestion/recent-activities` - Get recent activities
+
+### Government Data Integration
+- `POST /api/government-data/demo/start` - Start comprehensive demo
+- `POST /api/government-data/demo/stop` - Stop demo with summary
+- `GET /api/government-data/demo/status` - Current demo status
+- `POST /api/government-data/demo/scenario/{type}` - Run specific scenarios
+- `GET /api/government-data/monitoring/dashboard` - Live system dashboard
+- `GET /api/government-data/analytics/summary` - Analytics overview
+
+### Vendor Claiming
+- `GET /api/vendor-claiming/search` - Search for companies to claim
+- `POST /api/vendor-claiming/initiate` - Start claiming process
+- `POST /api/vendor-claiming/verify` - Verify company ownership
 
 ## Development
 
@@ -193,14 +236,15 @@ npx tsx server/encryption.test.ts
 - Complete transparency of data origins
 - Timestamped provenance records
 
-## Operational Runbooks
+## Documentation
 
-See `docs/operational-runbooks.md` for:
-- SESSION_SECRET rotation procedures
-- Audit trail review schedules
-- Encryption key management
-- Database backup/recovery procedures
-- Security incident response
+- **📋 Setup Guide**: `docs/markdown/SETUP_COMPLETE.md` - Complete setup and configuration
+- **🎬 Demo Guide**: `docs/markdown/DEMO.md` - Interactive demo instructions
+- **⚙️ Operational Runbooks**: `docs/operational-runbooks.md` - Production procedures
+- **🌐 Web Demo Access**: `WEB_DEMO_ACCESS.md` - Live web application guide
+- **🎨 Design Guidelines**: `docs/markdown/design_guidelines.md` - UI/UX standards
+- **🇨🇦 Canadian Business Support**: `docs/markdown/PROGRESS_CANADIAN_COMPANIES.md` - Implementation status
+- **📊 Implementation Summary**: `docs/markdown/IMPLEMENTATION_SUMMARY.md` - Project overview
 
 ## Production Deployment
 

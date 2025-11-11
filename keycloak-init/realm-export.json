@@ -1,0 +1,138 @@
+{
+  "realm": "vendorgrid",
+  "enabled": true,
+  "displayName": "VendorGrid",
+  "userRegistrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "editUsernameAllowed": true,
+  "otpPolicyCounter": 0,
+  "otpPolicyWindow": 1,
+  "otpPolicyPeriod": 30,
+  "otpPolicyDigits": 6,
+  "otpPolicyType": "totp",
+  "roles": {
+    "realm": [
+      {
+        "name": "default-roles-vendorgrid",
+        "description": "Default roles for VendorGrid users",
+        "composite": true,
+        "composites": {
+          "client": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ]
+          }
+        }
+      },
+      {
+        "name": "vendor",
+        "description": "Vendor user role"
+      },
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "data-integrator",
+        "description": "Data integration role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "vendorgrid-app",
+      "name": "VendorGrid Application",
+      "description": "Main VendorGrid application client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "REPLACE_WITH_CLIENT_SECRET",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:5173/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:5173/*,http://localhost:3000/*",
+        "saml.assertion.signature": "false",
+        "saml.multivalued.roles": "false",
+        "saml.force.post.binding": "false",
+        "saml.encrypt": "false"
+      }
+    },
+    {
+      "clientId": "vendorgrid-admin",
+      "name": "VendorGrid Admin Console",
+      "description": "Admin console access for VendorGrid",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "REPLACE_WITH_ADMIN_CLIENT_SECRET",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/admin/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone"
+      ]
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "VendorGrid Browser Flow",
+      "description": "Browser flow for VendorGrid authentication",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "buildIns": [
+        {
+          "provider": "auth-cookie",
+          "authConfig": {}
+        },
+        {
+          "provider": "auth-otp-form",
+          "authConfig": {}
+        },
+        {
+          "provider": "auth-spnego",
+          "authConfig": {}
+        }
+      ],
+      "subFlows": [
+        {
+          "alias": "forms",
+          "type": "basic-flow",
+          "buildIns": [
+            {
+              "provider": "auth-username-password-form",
+              "authConfig": {}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "identityProviders": []
+}

@@ -9,10 +9,11 @@ The VendorGrid web application is now **fully operational** and ready for demons
 ## 📋 **System Status**
 
 ### ✅ **Services Running**
-- **Backend API**: `localhost:3001` - Express.js with Government Data Integration
-- **Frontend App**: `localhost:5173` - React + TypeScript + Tailwind CSS  
-- **Database**: SQLite with hybrid configuration
+- **Backend API**: `localhost:5000` - Express.js with Government Data Integration
+- **Frontend App**: `localhost:5173` - React + TypeScript + Tailwind CSS
+- **Database**: PostgreSQL with full schema
 - **AI Monitoring**: Government data integration pipeline active
+- **Demo System**: Interactive CLI and web-based demos
 - **Uptime**: 99.8% with real-time health monitoring
 
 ---
@@ -94,9 +95,10 @@ http://localhost:5173/demo
 1. Click "Main Dashboard" or navigate to: `http://localhost:5173`
 2. Click "Sign In" to access the mock authentication system
 3. Explore the vendor dashboard features:
-   - Create a new vendor profile
+   - Create a new vendor profile with Canadian business support
    - View audit logs and access history
    - Test the profile editing functionality
+   - Experience data provenance tracking
 
 ### **Step 3: See AI Data Integration in Action**
 1. Navigate to: `http://localhost:5173/demo`
@@ -115,22 +117,26 @@ http://localhost:5173/demo
 ## 🏗️ **Technical Architecture**
 
 ### **Backend Services**
-- **API Server**: Express.js on port 3001
-- **Database**: SQLite with Drizzle ORM
-- **Authentication**: Mock auth system (development)
+- **API Server**: Express.js on port 5000
+- **Database**: PostgreSQL with Drizzle ORM and migrations
+- **Authentication**: Replit Auth (configurable for development)
 - **Government Integration**: AI agents monitoring Canadian sources
+- **Demo System**: Interactive CLI and web-based demos
 
-### **Frontend Application**  
+### **Frontend Application**
 - **Framework**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with custom components
+- **Styling**: Tailwind CSS with shadcn/ui components
 - **State Management**: TanStack Query for API calls
 - **Routing**: Wouter for client-side navigation
+- **UI Components**: Professional dashboard with dark/light theme
 
 ### **Key Integrations**
 - **Corporations Canada**: 45,000+ business records
-- **Canada Business Registry**: 32,000+ active companies  
+- **Statistics Canada**: 32,000+ active companies
+- **Provincial Registries**: 18,000+ regional records
 - **Real-Time Processing**: Live data validation and updates
 - **AI Monitoring**: Autonomous system health tracking
+- **Vendor Claiming**: Search and claiming workflow for Canadian companies
 
 ---
 

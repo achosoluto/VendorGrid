@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./mockAuth";
+import { setupAuth, isAuthenticated, getActiveAuthProvider, getAuthStatus } from "./keycloakAuth";
 import { insertVendorProfileSchema, updateVendorProfileSchema } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import governmentDataRoutes from "./routes/government-data-agent";
@@ -10,7 +10,10 @@ import vendorClaimingRoutes from "./routes/vendor-claiming";
 import { governmentDataMonitor } from "./monitoring/GovernmentDataMonitor";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // Auth middleware - uses provider switching (mock/keycloak)
+  const authProvider = getActiveAuthProvider();
+  console.log(`🔐 Authentication Provider: ${authProvider.toUpperCase()}`);
+  
   await setupAuth(app);
 
   // Rate limiting middleware
@@ -36,6 +39,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: "Too many requests, please try again later.",
     standardHeaders: 'draft-6',
     legacyHeaders: false,
+  });
+
+  // Auth status endpoint
+  app.get('/api/auth/status', async (req, res) => {
+    try {
+      const status = await getAuthStatus();
+      res.json({
+        timestamp: new Date().toISOString(),
+        ...status
+      });
+    } catch (error) {
+      console.error("Error fetching auth status:", error);
+      res.status(500).json({ message: "Failed to fetch auth status" });
+    }
   });
 
   // Auth routes (with stricter rate limiting)
