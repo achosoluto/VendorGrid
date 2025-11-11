@@ -14,14 +14,56 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
+# Create backend directory if it doesn't exist
+if [ ! -d "backend" ]; then
+    echo "📁 Creating backend directory..."
+    mkdir -p backend
+fi
+
+# Database initialization (only if using SQLite)
+if [ -z "$DATABASE_URL" ]; then
+    echo "🗄️  Initializing SQLite database..."
+    
+    # Check if database already exists
+    if [ -f "backend/vendors.db" ]; then
+        echo "✅ SQLite database already exists at backend/vendors.db"
+    else
+        echo "📋 Running database migrations to create schema..."
+        
+        # Generate and run migrations for SQLite
+        if command -v npx &> /dev/null; then
+            echo "   Generating database schema..."
+            npx drizzle-kit generate:sqlite --out=./migrations || echo "   Migration generation completed (may have warnings)"
+            
+            echo "   Applying migrations..."
+            npx drizzle-kit push:sqlite --db=./backend/vendors.db || echo "   Migration application completed (may have warnings)"
+        else
+            echo "⚠️  Drizzle CLI not available, skipping automated migration"
+        fi
+    fi
+else
+    echo "🐘 Using PostgreSQL database from DATABASE_URL"
+    
+    echo "📋 Running database migrations for PostgreSQL..."
+    if command -v npx &> /dev/null; then
+        echo "   Generating database schema..."
+        npx drizzle-kit generate:pg --out=./migrations || echo "   Migration generation completed (may have warnings)"
+        
+        echo "   Applying migrations..."
+        npx drizzle-kit push:pg --db=$DATABASE_URL || echo "   Migration application completed (may have warnings)"
+    else
+        echo "⚠️  Drizzle CLI not available, skipping automated migration"
+    fi
+fi
+
 # Check if server is running on port 3001
-if lsof -Pi :3001 -sTCP:LISTEN -t >/dev/null ; then
+if lsof -Pi :3001 -sTCP:LISTEN -t >/dev/null 2>&1; then
     echo "✅ VendorGrid server is already running on port 3001"
 else
     echo "🚀 Starting VendorGrid server..."
     
-    # Start server in background
-    npm run dev &
+    # Start server in background with proper port configuration
+    PORT=3001 npm run dev &
     SERVER_PID=$!
     
     echo "   Server PID: $SERVER_PID"

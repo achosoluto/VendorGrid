@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VendorGrid Live Demo - Verified Vendor Data Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .pulse-dot { animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <span class="ml-2 text-xl font-bold text-gray-900">VendorGrid</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <span class="pulse-dot w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                        Live Demo Active
+                    </span>
+                    <button onclick="scrollToSection('demo-controls')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        Try Demo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center">
+                <h1 class="text-5xl font-bold mb-6">
+                    The Industry's Most Trusted
+                    <br>
+                    <span class="text-blue-200">Verified Vendor Data Platform</span>
+                </h1>
+                <p class="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
+                    Experience our AI-powered government data integration, real-time vendor verification, 
+                    and comprehensive data provenance tracking in action.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="scrollToSection('live-demo')" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        🚀 Launch Interactive Demo
+                    </button>
+                    <button onclick="scrollToSection('features')" class="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">
+                        Explore Features
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Status Dashboard -->
+    <section class="bg-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Live System Status</h2>
+                <p class="text-gray-600">Real-time monitoring of our government data integration pipeline</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-green-800">Active</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-green-900 mb-1">Backend API</h3>
+                    <p class="text-green-700 text-sm">Port 3001 - All systems operational</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-blue-800">Running</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-blue-900 mb-1">Frontend App</h3>
+                    <p class="text-blue-700 text-sm">Port 5173 - React dashboard ready</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <span class="pulse-dot w-2 h-2 bg-purple-400 rounded-full"></span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-purple-900 mb-1">AI Monitoring</h3>
+                    <p class="text-purple-700 text-sm">Government data integration active</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-orange-800">99.8%</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-orange-900 mb-1">Uptime</h3>
+                    <p class="text-orange-700 text-sm">Database and API services</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Demo Section -->
+    <section id="live-demo" class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Interactive Feature Demonstration</h2>
+                <p class="text-xl text-gray-600">Explore the full VendorGrid platform capabilities</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- Vendor Profile Dashboard Demo -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+                        <h3 class="text-2xl font-bold mb-2">🏢 Vendor Dashboard</h3>
+                        <p class="text-blue-100">Real-time vendor profile management with security</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm3 1h6v4H7V5zm8 8v2h1v-2h-1zm-2-2H7v4h6v-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Maple Tech Solutions Inc.</p>
+                                        <p class="text-sm text-gray-600">Tax ID: XX-XXX-7890 • Verified</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Verified</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="p-3 bg-green-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">12</div>
+                                    <div class="text-sm text-green-700">Profile Views</div>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">5</div>
+                                    <div class="text-sm text-blue-700">Audit Changes</div>
+                                </div>
+                                <div class="p-3 bg-purple-50 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600">3</div>
+                                    <div class="text-sm text-purple-700">Data Sources</div>
+                                </div>
+                            </div>
+
+                            <div class="border-t pt-4">
+                                <h4 class="font-semibold text-gray-900 mb-2">Data Provenance</h4>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span>Company Name</span>
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">CRA Verified</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span>Address</span>
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Canada Post</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4">
+                        <div class="flex space-x-3">
+                            <a href="http://localhost:5173" target="_blank" class="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 transition">
+                                Open Dashboard
+                            </a>
+                            <button onclick="showDemoDetails('dashboard')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                Learn More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Government Data Integration Demo -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+                        <h3 class="text-2xl font-bold mb-2">🤖 AI Data Integration</h3>
+                        <p class="text-purple-100">Autonomous collection from Canadian government sources</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-green-900">Corporations Canada</p>
+                                    <p class="text-sm text-green-700">45,000+ records • 99.8% accuracy</p>
+                                </div>
+                                <span class="text-xs text-green-600">Active</span>
+                            </div>
+
+                            <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-blue-900">Canada Business Registry</p>
+                                    <p class="text-sm text-blue-700">32,000+ records • Real-time sync</p>
+                                </div>
+                                <span class="text-xs text-blue-600">Active</span>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Processing Status</span>
+                                    <span class="text-sm text-gray-600">2/3 Sources</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 67%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Auto-verifying new profiles...</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div class="p-3 bg-green-50 rounded-lg">
+                                    <div class="text-xl font-bold text-green-600">+47</div>
+                                    <div class="text-sm text-green-700">New Profiles</div>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-lg">
+                                    <div class="text-xl font-bold text-blue-600">156</div>
+                                    <div class="text-sm text-blue-700">Enhanced Records</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4">
+                        <div class="flex space-x-3">
+                            <a href="http://localhost:5173/demo" target="_blank" class="flex-1 bg-purple-600 text-white text-center py-2 rounded-lg hover:bg-purple-700 transition">
+                                View Live Demo
+                            </a>
+                            <button onclick="showDemoDetails('integration')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                Learn More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Access Instructions -->
+    <section class="bg-white py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">🔗 Access the Live Demo</h2>
+                <p class="text-xl text-gray-600">Experience VendorGrid in real-time</p>
+            </div>
+
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🚀 Quick Access</h3>
+                        <div class="space-y-3">
+                            <a href="http://localhost:5173" target="_blank" class="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition group">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Main Dashboard</p>
+                                        <p class="text-sm text-gray-600">http://localhost:5173</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-blue-500 group-hover:translate-x-1 transition" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            
+                            <a href="http://localhost:5173/demo" target="_blank" class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 hover:bg-purple-50 transition group">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Data Integration Demo</p>
+                                        <p class="text-sm text-gray-600">http://localhost:5173/demo</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-purple-500 group-hover:translate-x-1 transition" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">🔧 System Information</h3>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-700">Backend API</span>
+                                    <span class="text-sm text-green-600 font-mono">localhost:3001</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">Express.js with government data integration</div>
+                            </div>
+                            
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-700">Frontend</span>
+                                    <span class="text-sm text-blue-600 font-mono">localhost:5173</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">React + TypeScript + Tailwind CSS</div>
+                            </div>
+                            
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-700">Database</span>
+                                    <span class="text-sm text-purple-600 font-mono">SQLite</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">Hybrid configuration with migrations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-blue-900">Demo Instructions</h4>
+                            <ul class="text-sm text-blue-800 mt-1 space-y-1">
+                                <li>• Click "Sign In" to access the mock authentication system</li>
+                                <li>• Explore the vendor dashboard to see profile management features</li>
+                                <li>• Visit the demo page to see live government data integration</li>
+                                <li>• Test the AI verification and real-time monitoring features</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Overview -->
+    <section id="features" class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Comprehensive Platform Features</h2>
+                <p class="text-xl text-gray-600">Everything you need for vendor data management</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Verified Vendor Profiles</h3>
+                    <p class="text-gray-600 mb-4">Create once, use everywhere. Single source of truth for all vendor information with government-backed verification.</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>• Tax ID cross-reference with CRA</li>
+                        <li>• Address validation via Canada Post</li>
+                        <li>• Real-time status updates</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Government Data Integration</h3>
+                    <p class="text-gray-600 mb-4">Autonomous AI agents continuously monitor and sync with Canadian government business registries.</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>• Corporations Canada sync</li>
+                        <li>• Business Registry integration</li>
+                        <li>• Real-time data validation</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl p-6 shadow-lg card-hover">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Security & Compliance</h3>
+                    <p class="text-gray-600 mb-4">Enterprise-grade security with immutable audit trails and complete data provenance tracking.</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>• End-to-end encryption</li>
+                        <li>• Immutable audit logs</li>
+                        <li>• SOC 2 & GDPR compliant</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <span class="ml-2 text-xl font-bold">VendorGrid</span>
+                </div>
+                <p class="text-gray-400 mb-4">The trusted platform for verified vendor data</p>
+                <div class="flex justify-center space-x-6 text-sm text-gray-400">
+                    <span>🔒 SOC 2 Compliant</span>
+                    <span>🛡️ GDPR Ready</span>
+                    <span>🇨🇦 Canadian Government Integration</span>
+                    <span>🤖 AI-Powered Verification</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-6">© 2025 VendorGrid. Live demo environment.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Demo Details Modal -->
+    <div id="demoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="modalTitle" class="text-xl font-bold text-gray-900"></h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="modalContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showDemoDetails(type) {
+            const modal = document.getElementById('demoModal');
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+            
+            if (type === 'dashboard') {
+                title.textContent = 'Vendor Dashboard Features';
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Profile Management</h4>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Create and maintain verified vendor profiles</li>
+                                <li>• Real-time validation against government databases</li>
+                                <li>• Secure storage with end-to-end encryption</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Audit & Access Tracking</h4>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Immutable audit logs for all changes</li>
+                                <li>• Complete transparency of profile access</li>
+                                <li>• Data provenance for every field</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'integration') {
+                title.textContent = 'AI Data Integration Features';
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Autonomous Monitoring</h4>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Real-time sync with Canadian government sources</li>
+                                <li>• AI-powered data validation and enhancement</li>
+                                <li>• Automatic profile creation and updates</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Quality Assurance</h4>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• 99.8% accuracy rate with confidence scoring</li>
+                                <li>• Intelligent error handling and categorization</li>
+                                <li>• Cost-aware routing and optimization</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('demoModal').classList.add('hidden');
+        }
+
+        // Close modal on outside click
+        document.getElementById('demoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

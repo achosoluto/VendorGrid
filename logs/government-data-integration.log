@@ -2696,3 +2696,6 @@
 {"timestamp":"2025-10-27T21:23:39.826Z","level":"WARN","service":"government-data-integration","message":"ALERT [MEDIUM] system_health: Metrics collection failed","meta":{"error":"no such table: vendor_profiles"}}
 {"timestamp":"2025-10-27T21:23:39.826Z","level":"ERROR","service":"government-data-integration","message":"Health check failed: no such table: vendor_profiles"}
 {"timestamp":"2025-10-27T21:23:39.826Z","level":"WARN","service":"government-data-integration","message":"ALERT [CRITICAL] system_health: System health check failed","meta":{"error":"no such table: vendor_profiles"}}
+{"timestamp":"2025-11-11T03:31:37.397Z","level":"INFO","service":"government-data-integration","message":"Government Data Integration monitoring started"}
+{"timestamp":"2025-11-11T03:50:31.760Z","level":"INFO","service":"government-data-integration","message":"Government Data Integration monitoring started"}
+{"timestamp":"2025-11-11T03:59:13.943Z","level":"INFO","service":"government-data-integration","message":"Government Data Integration monitoring started"}
