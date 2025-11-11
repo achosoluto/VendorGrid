@@ -141,7 +141,7 @@ Ensure form validation handles:
 
 ## 🌟 **Current System State**
 
-### **Web Application:** http://localhost:3000
+### **Web Application:** http://localhost:3001
 - ✅ Server running and healthy
 - ✅ 5 Canadian companies ready for claiming
 - ✅ All APIs functional for Canadian companies

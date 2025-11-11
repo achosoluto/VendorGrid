@@ -103,10 +103,10 @@ The Phase 3 authentication system migration has been **successfully implemented*
 4. **Test Migration:**
    ```bash
    # Check authentication status
-   curl http://localhost:3000/api/auth/status
-   
+   curl http://localhost:3001/api/auth/status
+
    # Test login flow
-   curl http://localhost:3000/api/login
+   curl http://localhost:3001/api/login
    ```
 
 ### To Rollback to Mock Authentication:
@@ -188,7 +188,7 @@ In case of issues with Keycloak migration:
 
 ### Health Check Endpoint
 ```bash
-curl http://localhost:3000/api/auth/status
+curl http://localhost:3001/api/auth/status
 ```
 
 Response example (Mock):

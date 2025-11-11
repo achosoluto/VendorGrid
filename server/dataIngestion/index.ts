@@ -24,8 +24,12 @@ export async function runCanadianIngestion(): Promise<void> {
   }
 }
 
-// CLI runner
-if (require.main === module) {
+// CLI runner - Check if module is run directly using a method compatible with ES modules
+const isMain = 
+  typeof process.argv[1] !== 'undefined' && 
+  import.meta.url.replace('file://', '').includes(process.argv[1].replace(/\\/g, '/'));
+
+if (isMain) {
   runCanadianIngestion()
     .then(() => process.exit(0))
     .catch((error) => {
@@ -33,3 +37,8 @@ if (require.main === module) {
       process.exit(1);
     });
 }
+
+export { CanadianDataIngestionPipeline } from './ingestionPipeline';
+export { CanadianBusinessRegistryProcessor } from './canadianBusinessRegistryProcessor';
+export { CSVDownloader } from './csvDownloader';
+export { DataInjectionAgent } from './dataInjectionAgent';

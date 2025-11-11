@@ -62,26 +62,49 @@ export const CANADIAN_DATA_SOURCES: DataSource[] = [
   }
 ];
 
-export const PROVINCIAL_SOURCES = [
+export const PROVINCIAL_SOURCES: DataSource[] = [
   {
-    province: 'Ontario',
     name: 'Ontario Business Registry',
-    url: 'https://data.ontario.ca/dataset/ontario-business-registry',
-    type: 'csv' as const,
-    rateLimit: 60
+    // NOTE: Ontario Business Registry data requires official partnership/authorization
+    // This is NOT a public data source. See docs/ontario-business-registry-import-guide.md
+    url: 'https://www.obrpartner.mgcs.gov.on.ca/', // Partner portal URL
+    type: 'api', // Access through partner API, not direct CSV
+    rateLimit: 60,
+    fields: {
+      companyName: 'business_name',
+      businessNumber: 'business_number',
+      address: 'business_address',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postal_code'
+    }
   },
   {
-    province: 'British Columbia',
     name: 'BC Corporate Registry',
-    url: 'https://www.bcregistry.gov.bc.ca/open-data',
-    type: 'csv' as const,
-    rateLimit: 60
+    url: 'https://www.bcregistry.gov.bc.ca/open-data', // Placeholder URL
+    type: 'csv',
+    rateLimit: 60,
+    fields: {
+      companyName: 'business_name',
+      businessNumber: 'business_number',
+      address: 'business_address',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postal_code'
+    }
   },
   {
-    province: 'Quebec',
     name: 'Quebec Enterprise Registry',
-    url: 'https://www.registreentreprises.gouv.qc.ca/en/',
-    type: 'api' as const,
-    rateLimit: 30
+    url: 'https://www.registreentreprises.gouv.qc.ca/en/', // Placeholder URL
+    type: 'api',
+    rateLimit: 30,
+    fields: {
+      companyName: 'business_name',
+      businessNumber: 'business_number',
+      address: 'business_address',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postal_code'
+    }
   }
 ];

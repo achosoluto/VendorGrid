@@ -9,9 +9,9 @@ The VendorGrid web application is now **fully operational** and ready for demons
 ## 📋 **System Status**
 
 ### ✅ **Services Running**
-- **Backend API**: `localhost:5000` - Express.js with Government Data Integration
+- **Backend API**: `localhost:3001` - Express.js with Government Data Integration
 - **Frontend App**: `localhost:5173` - React + TypeScript + Tailwind CSS
-- **Database**: PostgreSQL with full schema
+- **Database**: Hybrid configuration (SQLite auto-setup for demo, PostgreSQL for production)
 - **AI Monitoring**: Government data integration pipeline active
 - **Demo System**: Interactive CLI and web-based demos
 - **Uptime**: 99.8% with real-time health monitoring
@@ -117,8 +117,8 @@ http://localhost:5173/demo
 ## 🏗️ **Technical Architecture**
 
 ### **Backend Services**
-- **API Server**: Express.js on port 5000
-- **Database**: PostgreSQL with Drizzle ORM and migrations
+- **API Server**: Express.js on port 3001
+- **Database**: Hybrid SQLite/PostgreSQL with Drizzle ORM and auto-migrations
 - **Authentication**: Replit Auth (configurable for development)
 - **Government Integration**: AI agents monitoring Canadian sources
 - **Demo System**: Interactive CLI and web-based demos
@@ -219,8 +219,9 @@ Your **VendorGrid web application is live and fully operational**. All systems a
 
 **Start your demo now:**
 1. **Comprehensive Demo**: `http://localhost/demo.html`
-2. **Main Platform**: `http://localhost:5173`  
+2. **Main Platform**: `http://localhost:5173`
 3. **Data Integration**: `http://localhost:5173/demo`
+4. **Backend API**: `http://localhost:3001`
 
 Experience the future of vendor data management with AI-powered verification, government integration, and enterprise-grade security!
 

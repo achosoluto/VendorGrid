@@ -17,7 +17,7 @@ Welcome to the VendorGrid Government Data Integration demonstration! This intera
    cd server
    npm run dev
    ```
-   Server should be running on `http://localhost:5000`
+   Server should be running on `http://localhost:3001`
 
 2. **Run the Interactive Demo**
    ```bash
@@ -101,19 +101,19 @@ You can also interact directly with the demo via REST endpoints:
 
 ```bash
 # Start comprehensive demo
-curl -X POST http://localhost:5000/api/government-data/demo/start
+curl -X POST http://localhost:3001/api/government-data/demo/start
 
 # Check demo status
-curl http://localhost:5000/api/government-data/demo/status  
+curl http://localhost:3001/api/government-data/demo/status
 
 # View live dashboard
-curl http://localhost:5000/api/government-data/monitoring/dashboard
+curl http://localhost:3001/api/government-data/monitoring/dashboard
 
 # Get analytics summary
-curl http://localhost:5000/api/government-data/analytics/summary
+curl http://localhost:3001/api/government-data/analytics/summary
 
 # Stop demo
-curl -X POST http://localhost:5000/api/government-data/demo/stop
+curl -X POST http://localhost:3001/api/government-data/demo/stop
 ```
 
 ## 🏗️ System Architecture
@@ -146,8 +146,8 @@ The demo showcases a production-ready architecture:
 
 ### Environment Variables
 ```bash
-# Demo server URL (default: http://localhost:5000)
-DEMO_URL=http://localhost:5000
+# Demo server URL (default: http://localhost:3001)
+DEMO_URL=http://localhost:3001
 
 # Demo authentication token (for testing)
 DEMO_AUTH_TOKEN=demo-session-token
@@ -158,13 +158,13 @@ The demo agent supports creating custom scenarios:
 
 ```bash
 # Success scenario - smooth processing
-curl -X POST http://localhost:5000/api/government-data/demo/scenario/success
+curl -X POST http://localhost:3001/api/government-data/demo/scenario/success
 
-# Error scenario - demonstrate error handling  
-curl -X POST http://localhost:5000/api/government-data/demo/scenario/errors
+# Error scenario - demonstrate error handling
+curl -X POST http://localhost:3001/api/government-data/demo/scenario/errors
 
 # Mixed scenario - realistic processing blend
-curl -X POST http://localhost:5000/api/government-data/demo/scenario/mixed
+curl -X POST http://localhost:3001/api/government-data/demo/scenario/mixed
 ```
 
 ## 📈 Performance Metrics

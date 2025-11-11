@@ -108,13 +108,13 @@ npm run demo
 ### **Option 3: API Direct Access**
 ```bash
 # Start demo via API
-curl -X POST http://localhost:5000/api/government-data/demo/start
+curl -X POST http://localhost:3001/api/government-data/demo/start
 
 # Check status
-curl http://localhost:5000/api/government-data/demo/status
+curl http://localhost:3001/api/government-data/demo/status
 
 # View dashboard
-curl http://localhost:5000/api/government-data/monitoring/dashboard
+curl http://localhost:3001/api/government-data/monitoring/dashboard
 ```
 
 ## 📊 Key Features Demonstrated

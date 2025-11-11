@@ -53,19 +53,23 @@ A secure B2B SaaS application that creates a centralized, verified database of v
 
 ### Prerequisites
 - Node.js 18+ installed
-- PostgreSQL database (local or Neon)
-- Replit account for authentication
+- **For Demo (Recommended)**: Nothing else required - SQLite database is auto-configured
+- **For Production**: PostgreSQL database (local or Neon)
 
 ### Environment Variables
 
-Create or ensure these environment variables are set:
+**Option 1: Demo Mode (Zero-Friction Setup)**
+```bash
+# No environment variables required - SQLite auto-configured
+```
 
+**Option 2: Production Mode (PostgreSQL)**
 ```bash
 DATABASE_URL=postgresql://...           # PostgreSQL connection string
 SESSION_SECRET=your-secret-key-here    # Secret for session encryption
-REPL_ID=your-repl-id                   # Replit application ID
-ISSUER_URL=https://replit.com/oidc     # OIDC issuer (default)
-REPLIT_DOMAINS=your-domain.com         # Allowed domains for auth
+REPL_ID=your-repl-id                   # Replit application ID (optional for demo)
+ISSUER_URL=https://replit.com/oidc     # OIDC issuer (optional for demo)
+REPLIT_DOMAINS=your-domain.com         # Allowed domains for auth (optional for demo)
 ```
 
 ### Installation
@@ -74,29 +78,34 @@ REPLIT_DOMAINS=your-domain.com         # Allowed domains for auth
 # Install dependencies
 npm install
 
-# Set up database
-npm run db:push
-
-# Start development servers
-npm run dev          # Backend (port 5000)
+# Start development servers (auto-detects database configuration)
+npm run dev          # Backend (port 3001)
 # In another terminal:
 cd client && npm run dev  # Frontend (port 5173)
 ```
 
-### Quick Demo
+### Quick Demo (Recommended)
 
-For a complete demo experience:
+For a complete zero-friction demo experience:
 
 ```bash
-# Start the comprehensive demo system
+# Start the comprehensive demo system with auto-setup
 ./run-demo.sh
 ```
 
 The application will be available at:
-- **Backend API**: `http://localhost:5000`
+- **Backend API**: `http://localhost:3001`
 - **Frontend Web App**: `http://localhost:5173`
 - **Demo Page**: `http://localhost:5173/demo`
 - **Comprehensive Demo**: `http://localhost/demo.html`
+- **Interactive Guide**: `http://localhost/demo.html`
+
+### Database Auto-Configuration
+
+- **Demo Mode**: SQLite database automatically created at `backend/vendors.db`
+- **Production Mode**: Uses PostgreSQL when `DATABASE_URL` is set
+- **Zero Setup**: No manual database configuration required for demos
+- **Schema Migration**: Automatically applied on first startup
 
 ## Project Structure
 

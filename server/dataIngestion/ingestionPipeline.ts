@@ -38,6 +38,18 @@ export class CanadianDataIngestionPipeline {
       }
     }
 
+    // Process provincial sources
+    for (const source of PROVINCIAL_SOURCES) {
+      try {
+        const sourceResults = await this.ingestFromSource(source);
+        results.processed += sourceResults.processed;
+        results.errors.push(...sourceResults.errors);
+      } catch (error) {
+        results.errors.push(`Failed to process ${source.name}: ${error.message}`);
+        console.error(`Error processing ${source.name}:`, error);
+      }
+    }
+
     console.log(`Ingestion completed. Processed: ${results.processed}, Errors: ${results.errors.length}`);
     return results;
   }

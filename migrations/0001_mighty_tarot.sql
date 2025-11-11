@@ -1,0 +1,3 @@
+-- Migration: 0001_mighty_tarot
+-- This migration was part of the original schema setup
+-- It may have been an empty migration or a schema refresh

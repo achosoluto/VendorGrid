@@ -595,7 +595,7 @@ curl -X POST http://localhost:8080/admin/realms/vendorgrid/users/{userId}/reset-
 1. **Allowed Origins**
    ```
    http://localhost:5173
-   http://localhost:3000
+   http://localhost:3001
    https://vendorgrid.com
    https://app.vendorgrid.com
    ```

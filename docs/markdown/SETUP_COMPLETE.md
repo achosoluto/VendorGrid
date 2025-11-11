@@ -9,7 +9,7 @@
 - **Complete** production-ready codebase with government data integration
 - **Installed** all Node.js dependencies for full-stack development
 - **Configured** environment variables for both local and production development
-- **Set up** PostgreSQL database with full schema migrations
+- **Set up** hybrid database configuration (SQLite auto-setup for demo, PostgreSQL for production)
 - **Enhanced** database schema for Canadian businesses and enterprise features
 - **Deployed** React frontend with TypeScript and modern UI components
 - **Implemented** comprehensive demo system with live monitoring
@@ -41,8 +41,8 @@ The vendor profiles table was enhanced to support Canadian businesses with:
 - **Validated** tax ID uniqueness constraints
 
 ### 4. Infrastructure Status ✅
-- **Database**: PostgreSQL 16 with full schema migrations
-- **Backend API**: Node.js/Express server (port 5000) with comprehensive endpoints
+- **Database**: Hybrid configuration (SQLite for demo, PostgreSQL for production)
+- **Backend API**: Node.js/Express server (port 3001) with comprehensive endpoints
 - **Frontend**: React 18 with TypeScript, Tailwind CSS, shadcn/ui (port 5173)
 - **ORM**: Drizzle with full type safety and migrations
 - **Authentication**: Replit Auth configured for production use
@@ -121,7 +121,7 @@ The vendor profiles table was enhanced to support Canadian businesses with:
 ## Next Steps Recommendations
 
 ### Immediate (Today)
-1. **Test the web interface** at http://localhost:3000
+1. **Test the web interface** at http://localhost:3001
 2. **Set up authentication** if needed for testing
 3. **Review the audit logs** to see data provenance in action
 
@@ -155,13 +155,13 @@ VendorGrid/
 │   └── schema.ts             # Database schema + validation
 ├── scripts/
 │   └── ingest-canadian-data.ts  # Data import script
-├── docker-compose.yml        # PostgreSQL database
-└── .env                      # Environment configuration
+├── docker-compose.yml        # PostgreSQL database (optional for production)
+└── .env                      # Environment configuration (optional for demo)
 ```
 
 ## Technology Stack Summary
 - **Backend**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL 16 with Drizzle ORM
+- **Database**: Hybrid (SQLite for demo, PostgreSQL 16 for production) with Drizzle ORM
 - **Frontend**: React 18 + Vite + Tailwind CSS
 - **Security**: AES-256-GCM encryption, session auth
 - **Data Sources**: Government registries, APIs, CSV imports
@@ -169,10 +169,10 @@ VendorGrid/
 
 ## Access Information
 - **Web Application**: http://localhost:5173 (React frontend)
-- **Backend API**: http://localhost:5000 (Express API)
+- **Backend API**: http://localhost:3001 (Express API)
 - **Demo Page**: http://localhost/demo.html (Comprehensive demo)
 - **Interactive Demo**: `npm run demo` (CLI interface)
-- **Database**: PostgreSQL (configure via DATABASE_URL)
+- **Database**: Auto-configured (SQLite for demo, PostgreSQL when DATABASE_URL set)
 - **Auto-start**: `./run-demo.sh` (Complete system startup)
 
 ## Environment Setup
@@ -191,7 +191,7 @@ REPLIT_DOMAINS=your-domain.com
 ./run-demo.sh              # Automated setup and demo
 
 # Manual startup
-npm run dev                # Backend (port 5000)
+npm run dev                # Backend (port 3001)
 cd client && npm run dev   # Frontend (port 5173)
 
 # Demo system

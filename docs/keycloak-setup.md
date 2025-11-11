@@ -40,7 +40,7 @@ The Keycloak setup includes:
 graph TB
     subgraph "VendorGrid Network"
         Client[Client Application :5173]
-        Backend[Backend API :5000]
+        Backend[Backend API :3001]
         
         subgraph "Keycloak Stack"
             Keycloak[Keycloak :8080]
@@ -188,13 +188,13 @@ KEYCLOAK_ADMIN_CLIENT_SECRET=your_actual_admin_client_secret_here
 2. **Redirect URIs**:
    ```
    http://localhost:5173/*
-   http://localhost:3000/*
+   http://localhost:3001/*
    ```
 
 3. **Web Origins**:
    ```
    http://localhost:5173
-   http://localhost:3000
+   http://localhost:3001
    ```
 
 #### Test Client Configuration
