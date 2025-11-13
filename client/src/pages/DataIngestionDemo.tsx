@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Database, 
-  Zap, 
-  CheckCircle2, 
-  Clock, 
-  AlertTriangle, 
+import { useToast } from "@/hooks/use-toast";
+import {
+  Database,
+  Zap,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
   RefreshCw,
   Eye,
   Shield,
-  Bot
+  Bot,
+  StopCircle
 } from "lucide-react";
 
 interface IngestionStatus {
@@ -33,6 +35,7 @@ interface IngestionStatus {
 
 export default function DataIngestionDemo() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [ingestionStatus, setIngestionStatus] = useState<IngestionStatus>({
     isRunning: false,
     processed: 0,
@@ -51,20 +54,76 @@ export default function DataIngestionDemo() {
         method: 'POST',
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to start ingestion');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to start ingestion');
+      }
       return response.json();
     },
     onSuccess: () => {
       setIngestionStatus(prev => ({ ...prev, isRunning: true }));
+      toast({
+        title: "Pipeline Started",
+        description: "Autonomous data ingestion is now running",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Start",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Stop ingestion mutation
+  const stopIngestion = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/data-ingestion/stop', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to stop ingestion');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setIngestionStatus(prev => ({ ...prev, isRunning: false }));
+      toast({
+        title: "Pipeline Stopped",
+        description: "Autonomous data ingestion has been stopped",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Stop",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   });
 
   // Poll ingestion status
-  const { data: statusData } = useQuery<IngestionStatus>({
+  const { data: statusData, error: statusError } = useQuery<IngestionStatus>({
     queryKey: ['/api/data-ingestion/status'],
     refetchInterval: ingestionStatus.isRunning ? 2000 : false,
-    enabled: ingestionStatus.isRunning
+    enabled: ingestionStatus.isRunning,
+    retry: 3,
+    retryDelay: 1000,
   });
+
+  // Handle status errors
+  useEffect(() => {
+    if (statusError) {
+      toast({
+        title: "Status Error",
+        description: "Failed to fetch ingestion status. Retrying...",
+        variant: "destructive",
+      });
+    }
+  }, [statusError, toast]);
 
   useEffect(() => {
     if (statusData) {
@@ -104,15 +163,15 @@ export default function DataIngestionDemo() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-4 items-center">
-                <Button 
+                <Button
                   onClick={() => startIngestion.mutate()}
                   disabled={ingestionStatus.isRunning || startIngestion.isPending}
                   className="flex items-center gap-2"
                 >
-                  {ingestionStatus.isRunning ? (
+                  {startIngestion.isPending ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Running...
+                      Starting...
                     </>
                   ) : (
                     <>
@@ -121,6 +180,27 @@ export default function DataIngestionDemo() {
                     </>
                   )}
                 </Button>
+
+                {ingestionStatus.isRunning && (
+                  <Button
+                    onClick={() => stopIngestion.mutate()}
+                    disabled={stopIngestion.isPending}
+                    variant="destructive"
+                    className="flex items-center gap-2"
+                  >
+                    {stopIngestion.isPending ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Stopping...
+                      </>
+                    ) : (
+                      <>
+                        <StopCircle className="w-4 h-4" />
+                        Stop Ingestion
+                      </>
+                    )}
+                  </Button>
+                )}
                 
                 {ingestionStatus.isRunning && (
                   <div className="flex-1 space-y-2">

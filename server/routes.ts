@@ -299,31 +299,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Invalid format
 
 
+  // Data ingestion demo state management
+  // In-memory state for demo (in production, this would be in a database)
+  interface DemoState {
+    isRunning: boolean;
+    jobId: string | null;
+    startTime: number | null;
+    processed: number;
+    newProfiles: number;
+    updatedProfiles: number;
+    verificationsPending: number;
+  }
+
+  const demoStates = new Map<string, DemoState>();
+
+  // Helper to get or create demo state for a user
+  const getDemoState = (userId: string): DemoState => {
+    if (!demoStates.has(userId)) {
+      demoStates.set(userId, {
+        isRunning: false,
+        jobId: null,
+        startTime: null,
+        processed: 0,
+        newProfiles: 0,
+        updatedProfiles: 0,
+        verificationsPending: 0,
+      });
+    }
+    return demoStates.get(userId)!;
+  };
+
   // Data ingestion demo endpoints
   app.post('/api/data-ingestion/start', writeLimiter, isAuthenticated, async (req: any, res) => {
     try {
-      // Simulate starting the ingestion pipeline
-      res.json({ message: 'Ingestion pipeline started', jobId: `job_${Date.now()}` });
+      const userId = req.user?.claims?.sub || 'anonymous';
+      const state = getDemoState(userId);
+
+      if (state.isRunning) {
+        return res.status(400).json({ message: 'Ingestion is already running' });
+      }
+
+      // Start the ingestion
+      const jobId = `job_${Date.now()}`;
+      state.isRunning = true;
+      state.jobId = jobId;
+      state.startTime = Date.now();
+      state.processed = 0;
+      state.newProfiles = 0;
+      state.updatedProfiles = 0;
+      state.verificationsPending = 0;
+
+      res.json({ message: 'Ingestion pipeline started', jobId });
     } catch (error) {
       console.error("Error starting ingestion:", error);
       res.status(500).json({ message: "Failed to start ingestion" });
     }
   });
 
+  app.post('/api/data-ingestion/stop', writeLimiter, isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || 'anonymous';
+      const state = getDemoState(userId);
+
+      if (!state.isRunning) {
+        return res.status(400).json({ message: 'Ingestion is not running' });
+      }
+
+      // Stop the ingestion
+      state.isRunning = false;
+
+      res.json({ message: 'Ingestion pipeline stopped' });
+    } catch (error) {
+      console.error("Error stopping ingestion:", error);
+      res.status(500).json({ message: "Failed to stop ingestion" });
+    }
+  });
+
   app.get('/api/data-ingestion/status', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
-      // Simulate real-time ingestion status
+      const userId = req.user?.claims?.sub || 'anonymous';
+      const state = getDemoState(userId);
+
+      // If running, simulate progress over time
+      if (state.isRunning && state.startTime) {
+        const elapsed = Date.now() - state.startTime;
+        const seconds = Math.floor(elapsed / 1000);
+
+        // Gradually increase metrics based on time elapsed
+        state.processed = Math.min(3, Math.floor(seconds / 5));
+        state.newProfiles = Math.min(150, 10 + Math.floor(seconds * 2));
+        state.updatedProfiles = Math.min(80, 5 + Math.floor(seconds * 1.5));
+        state.verificationsPending = Math.max(0, Math.floor(20 - seconds * 0.5));
+
+        // Auto-complete after 60 seconds
+        if (elapsed > 60000) {
+          state.isRunning = false;
+          state.processed = 3;
+        }
+      }
+
       const mockStatus = {
-        isRunning: Math.random() > 0.7, // 30% chance it's running
-        processed: Math.floor(Math.random() * 3) + 1,
+        isRunning: state.isRunning,
+        processed: state.processed,
         errors: [],
-        currentSource: 'Corporations Canada',
+        currentSource: state.processed === 0 ? 'Corporations Canada' :
+                       state.processed === 1 ? 'Ontario Business Registry' :
+                       state.processed === 2 ? 'Quebec Business Registry' : 'Complete',
         totalSources: 3,
-        newProfiles: Math.floor(Math.random() * 50) + 10,
-        updatedProfiles: Math.floor(Math.random() * 30) + 5,
-        verificationsPending: Math.floor(Math.random() * 20) + 3
+        newProfiles: state.newProfiles,
+        updatedProfiles: state.updatedProfiles,
+        verificationsPending: state.verificationsPending,
       };
-      
+
       res.json(mockStatus);
     } catch (error) {
       console.error("Error fetching ingestion status:", error);
@@ -367,13 +454,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching activities:", error);
       res.status(500).json({ message: "Failed to fetch activities" });
-    }
-  });
-
-      return res.status(400).json({ message: "Invalid format. Use 'json' or 'csv'" });
-    } catch (error) {
-      console.error("Error exporting audit logs:", error);
-      res.status(500).json({ message: "Failed to export audit logs" });
     }
   });
 

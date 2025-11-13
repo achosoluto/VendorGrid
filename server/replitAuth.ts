@@ -1,3 +1,6 @@
+// Load environment variables first
+import "./env";
+
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
 
@@ -6,9 +9,12 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+const isLocalDevMode = process.env.LOCAL_DEV_MODE === 'true';
+
+if (!process.env.REPLIT_DOMAINS && !isLocalDevMode) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -24,13 +30,25 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+
+  let sessionStore;
+  if (isLocalDevMode) {
+    // Use in-memory store for local development
+    const MemoryStoreSession = MemoryStore(session);
+    sessionStore = new MemoryStoreSession({
+      checkPeriod: sessionTtl,
+    });
+  } else {
+    // Use PostgreSQL store for production
+    const pgStore = connectPg(session);
+    sessionStore = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: false,
+      ttl: sessionTtl,
+      tableName: "sessions",
+    });
+  }
+
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -38,7 +56,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: !isLocalDevMode, // Allow non-HTTPS in local dev
       maxAge: sessionTtl,
     },
   });
@@ -72,6 +90,58 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  if (isLocalDevMode) {
+    // Local development mode - mock authentication
+    console.log("🔧 Running in LOCAL_DEV_MODE - using mock authentication");
+
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
+    // Auto-login endpoint for local dev
+    app.get("/api/login", async (req, res) => {
+      const mockUser = {
+        claims: {
+          sub: "local-dev-user-123",
+          email: "dev@localhost",
+          first_name: "Local",
+          last_name: "Developer",
+          profile_image_url: "",
+          exp: Math.floor(Date.now() / 1000) + 86400, // 24 hours
+        },
+        access_token: "mock-access-token",
+        refresh_token: "mock-refresh-token",
+        expires_at: Math.floor(Date.now() / 1000) + 86400,
+      };
+
+      // Upsert mock user
+      try {
+        await upsertUser(mockUser.claims);
+      } catch (error) {
+        console.log("Note: Database not available, continuing with mock auth");
+      }
+
+      req.login(mockUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.redirect("/");
+      });
+    });
+
+    app.get("/api/callback", (req, res) => {
+      res.redirect("/");
+    });
+
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect("/");
+      });
+    });
+
+    return;
+  }
+
+  // Production mode - Replit OIDC authentication
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -132,6 +202,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   if (!req.isAuthenticated() || !user.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // In local dev mode, skip token refresh logic
+  if (isLocalDevMode) {
+    return next();
   }
 
   const now = Math.floor(Date.now() / 1000);

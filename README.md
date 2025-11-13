@@ -43,35 +43,81 @@ A secure B2B SaaS application that creates a centralized, verified database of v
 
 ### Prerequisites
 - Node.js 18+ installed
-- PostgreSQL database (Neon recommended)
-- Replit account for authentication
+- (Optional) PostgreSQL database for production-like testing
 
-### Environment Variables
+### Local Development Setup
 
-Create or ensure these environment variables are set:
+The application includes a **local development mode** that allows you to run the server without Replit authentication or a database. This is perfect for local development and testing.
+
+#### Quick Start (Local Development)
 
 ```bash
-DATABASE_URL=postgresql://...           # PostgreSQL connection string
-SESSION_SECRET=your-secret-key-here    # Secret for session encryption
-REPL_ID=your-repl-id                   # Replit application ID
-ISSUER_URL=https://replit.com/oidc     # OIDC issuer (default)
-REPLIT_DOMAINS=your-domain.com         # Allowed domains for auth
+# 1. Install dependencies
+npm install
+
+# 2. Copy the example environment file
+cp .env.example .env
+
+# 3. Start development server
+npm run dev
 ```
 
-### Installation
+The application will be available at `http://localhost:5000`
+
+**What happens in local dev mode:**
+- Automatic mock authentication (no Replit Auth required)
+- In-memory session storage (no PostgreSQL required for sessions)
+- Optional database connection (works without DATABASE_URL)
+- Access the app and it will auto-login as a test user
+
+#### Environment Variables
+
+The `.env` file created from `.env.example` includes:
+
+```bash
+# Local Development Mode - bypasses Replit auth
+LOCAL_DEV_MODE=true
+
+# Session Secret - Required (can be any string for local dev)
+SESSION_SECRET=local-dev-secret-key-change-in-production
+
+# Database URL - Optional for local dev
+# DATABASE_URL=postgresql://localhost:5432/vendorgrid
+
+# Server Port - Default: 5000
+PORT=5000
+```
+
+### Production Setup (Replit/Deployed Environment)
+
+For production deployment with full authentication and database:
+
+```bash
+# Disable local dev mode
+LOCAL_DEV_MODE=false
+
+# PostgreSQL connection string (required in production)
+DATABASE_URL=postgresql://...
+
+# Strong session secret (generate with: openssl rand -base64 32)
+SESSION_SECRET=your-secret-key-here
+
+# Replit Auth configuration (required in production)
+REPL_ID=your-repl-id
+REPLIT_DOMAINS=your-domain.replit.dev
+ISSUER_URL=https://replit.com/oidc
+```
 
 ```bash
 # Install dependencies
 npm install
 
-# Push database schema
+# Push database schema to your PostgreSQL database
 npm run db:push
 
-# Start development server
-npm run dev
+# Start production server
+npm start
 ```
-
-The application will be available at `http://localhost:5000`
 
 ## Project Structure
 
