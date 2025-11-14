@@ -42,3 +42,7 @@ export { CanadianDataIngestionPipeline } from './ingestionPipeline';
 export { CanadianBusinessRegistryProcessor } from './canadianBusinessRegistryProcessor';
 export { CSVDownloader } from './csvDownloader';
 export { DataInjectionAgent } from './dataInjectionAgent';
+export { SourceManager } from './sourceManager';
+export { DataProcessingPipeline } from './dataProcessingPipeline';
+export { MonitoringService } from './monitoringService';
+export { runPublicDataDownload } from './publicDataDownloader';

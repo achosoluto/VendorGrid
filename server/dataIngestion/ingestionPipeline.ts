@@ -72,6 +72,8 @@ export class CanadianDataIngestionPipeline {
         rawData = await this.fetchAPIData(source);
       } else if (source.type === 'json') {
         rawData = await this.fetchJSONData(source);
+      } else if (source.type === 'xml') {
+        rawData = await this.fetchXMLData(source);
       }
 
       // Process each business record
@@ -131,6 +133,71 @@ export class CanadianDataIngestionPipeline {
 
   private async fetchJSONData(source: DataSource): Promise<RawBusinessData[]> {
     return this.fetchAPIData(source); // Same implementation for now
+  }
+
+  private async fetchXMLData(source: DataSource): Promise<RawBusinessData[]> {
+    const response = await fetch(source.url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const xmlText = await response.text();
+    
+    // Simple XML parsing without external dependencies
+    // This is a basic implementation that works with known XML structures
+    return this.parseXMLData(xmlText, source.fields);
+  }
+
+  private parseXMLData(xmlText: string, fieldMapping: DataSource['fields']): RawBusinessData[] {
+    // Simple regex-based XML parsing to extract business records
+    // This is a simplified implementation - in production, a proper XML parser would be used
+    
+    // Look for common XML patterns in corporate data
+    const records: RawBusinessData[] = [];
+    
+    // This regex looks for XML elements that might contain business data
+    // The actual implementation would need to be tailored to the specific XML structure
+    const recordRegex = /<corp(?:[^>]*?)>(.*?)<\/corp>/gs;
+    let match;
+    
+    while ((match = recordRegex.exec(xmlText)) !== null) {
+      const recordContent = match[1];
+      
+      // Extract fields based on the mapping
+      const record: RawBusinessData = {
+        companyName: this.extractXMLValue(recordContent, fieldMapping.companyName || 'corpName'),
+        businessNumber: this.extractXMLValue(recordContent, fieldMapping.businessNumber || 'corpNum'),
+        address: this.extractXMLValue(recordContent, fieldMapping.address || 'regOffAddr'),
+        city: this.extractXMLValue(recordContent, fieldMapping.city || 'city'),
+        province: this.extractXMLValue(recordContent, fieldMapping.province || 'province'),
+        postalCode: this.extractXMLValue(recordContent, fieldMapping.postalCode || 'postalCd'),
+        phone: '',
+        email: '',
+        website: ''
+      };
+      
+      if (record.companyName && record.businessNumber) {
+        records.push(record);
+      }
+    }
+    
+    return records;
+  }
+
+  private extractXMLValue(xmlContent: string, fieldName: string): string {
+    const regex = new RegExp(`<${fieldName}[^>]*?>(.*?)</${fieldName}>`, 'i');
+    const match = xmlContent.match(regex);
+    return match ? this.decodeXmlEntities(match[1].trim()) : '';
+  }
+
+  private decodeXmlEntities(text: string): string {
+    // Simple XML entity decoding
+    return text
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&');
   }
 
   private mapFields(row: any, fieldMapping: DataSource['fields']): RawBusinessData {

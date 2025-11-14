@@ -2,19 +2,27 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, getActiveAuthProvider, getAuthStatus } from "./keycloakAuth";
-import { insertVendorProfileSchema, updateVendorProfileSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated as keycloakIsAuthenticated, getActiveAuthProvider, getAuthStatus } from "./keycloakAuth";
+import { setupMockAuth, isAuthenticated as mockIsAuthenticated, getMockAuthStatus } from "./replitAuth";
+import { insertVendorProfileSchema, updateVendorProfileSchema, users } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import governmentDataRoutes from "./routes/government-data-agent";
 import vendorClaimingRoutes from "./routes/vendor-claiming";
 import { governmentDataMonitor } from "./monitoring/GovernmentDataMonitor";
+import { dbType } from "./db";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - uses provider switching (mock/keycloak)
   const authProvider = getActiveAuthProvider();
   console.log(`🔐 Authentication Provider: ${authProvider.toUpperCase()}`);
-  
-  await setupAuth(app);
+
+  // Set up authentication based on provider
+  if (authProvider === "keycloak") {
+    await setupAuth(app);
+  } else {
+    await setupMockAuth(app);
+  }
 
   // Rate limiting middleware
   const authLimiter = rateLimit({
@@ -44,7 +52,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth status endpoint
   app.get('/api/auth/status', async (req, res) => {
     try {
-      const status = await getAuthStatus();
+      const statusAuthProvider = getActiveAuthProvider();
+      let status;
+
+      if (statusAuthProvider === "keycloak") {
+        status = await getAuthStatus();
+      } else {
+        status = await getMockAuthStatus();
+      }
+
       res.json({
         timestamp: new Date().toISOString(),
         ...status
@@ -55,10 +71,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get the appropriate authentication middleware based on provider
+  const isAuthenticated = authProvider === "keycloak" ? keycloakIsAuthenticated : mockIsAuthenticated;
+
   // Auth routes (with stricter rate limiting)
   app.get('/api/auth/user', authLimiter, isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
+
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -70,9 +95,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get vendor profile for logged-in user
   app.get('/api/vendor-profile', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
+
       const profile = await storage.getVendorProfileByUserId(userId);
-      
+
       // Return null profile instead of 404 so client can handle gracefully
       res.json({ profile: profile || null });
     } catch (error) {
@@ -84,9 +115,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create vendor profile (with write rate limiting)
   app.post('/api/vendor-profile', writeLimiter, isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
+      let userId;
+      let user;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else {
+        userId = (req.user as any).id;
+        user = await storage.getUser(userId);
+      }
+
       // Check if profile already exists
       const existingProfile = await storage.getVendorProfileByUserId(userId);
       if (existingProfile) {
@@ -138,8 +176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/vendor-profile/:id', writeLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let userId;
+      let user;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+        user = await storage.getUser(userId);
+      } else {
+        userId = (req.user as any).id;
+        user = await storage.getUser(userId);
+      }
 
       // Verify ownership
       const existingProfile = await storage.getVendorProfileById(id);
@@ -156,11 +201,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create audit logs for each changed field
       const actorName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Unknown User';
       const changedFields = Object.keys(validatedData);
-      
+
       for (const field of changedFields) {
         const oldValue = (existingProfile as any)[field];
         const newValue = (validatedData as any)[field];
-        
+
         if (oldValue !== newValue) {
           await storage.createAuditLog({
             vendorProfileId: id,
@@ -194,7 +239,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vendor-profile/:id/audit-logs', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
 
       // Verify ownership
       const profile = await storage.getVendorProfileById(id);
@@ -203,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const logs = await storage.getAuditLogsByVendorId(id);
-      
+
       // Format timestamps
       const formattedLogs = logs.map(log => ({
         ...log,
@@ -222,7 +272,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vendor-profile/:id/audit-logs/export', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
       const { format = 'json', startDate, endDate } = req.query;
 
       // Verify ownership
@@ -310,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ];
 
         const csvContent = csvRows.join('\n');
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${profile.companyName.replace(/[^a-zA-Z0-9]/g, '_')}-${new Date().toISOString().split('T')[0]}.csv"`);
         return res.send(csvContent);
@@ -328,7 +383,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vendor-profile/:id/access-logs', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
 
       // Verify ownership
       const profile = await storage.getVendorProfileById(id);
@@ -337,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const logs = await storage.getAccessLogsByVendorId(id);
-      
+
       // Format timestamps
       const formattedLogs = logs.map(log => ({
         ...log,
@@ -356,7 +416,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vendor-profile/:id/provenance', readLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      let userId;
+      if (authProvider === "keycloak") {
+        userId = req.user.claims.sub;
+      } else {
+        userId = (req.user as any).id;
+      }
 
       // Verify ownership
       const profile = await storage.getVendorProfileById(id);
@@ -365,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const provenance = await storage.getProvenanceByVendorId(id);
-      
+
       // Format timestamps and group by field
       const provenanceMap = new Map();
       for (const entry of provenance) {
@@ -422,6 +487,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching system status:", error);
       res.status(500).json({ message: "Failed to fetch system status" });
+    }
+  });
+
+  // Comprehensive health check endpoint
+  app.get('/api/health', async (req, res) => {
+    try {
+      const healthCheck = {
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        status: 'OK',
+        environment: process.env.NODE_ENV || 'development',
+        authProvider: getActiveAuthProvider(),
+        database: {
+          type: dbType,
+          connected: true,
+        },
+        services: {
+          governmentDataMonitor: governmentDataMonitor.isRunning(),
+          auth: getActiveAuthProvider(),
+        },
+        details: {}
+      };
+
+      // Test database connectivity
+      try {
+        // Simple query to test database connection - check if users table is accessible
+        await db.select().from(users).limit(1); // This will throw if DB is not accessible
+        healthCheck.details['database'] = { status: 'connected' };
+      } catch (dbError) {
+        console.error("Database health check failed:", dbError);
+        healthCheck.status = 'ERROR';
+        healthCheck.database.connected = false;
+        healthCheck.details['database'] = { status: 'disconnected', error: dbError.message };
+      }
+
+      // Check authentication system
+      try {
+        const authStatus = await getAuthStatus();
+        healthCheck.details['authentication'] = { status: authStatus.status };
+      } catch (authError) {
+        console.error("Authentication health check failed:", authError);
+        healthCheck.status = 'ERROR';
+        healthCheck.details['authentication'] = { status: 'error', error: authError.message };
+      }
+
+      // Check government data monitor
+      try {
+        const monitorStatus = governmentDataMonitor.getSystemStatus();
+        healthCheck.details['governmentDataMonitor'] = { status: monitorStatus.status };
+      } catch (monitorError) {
+        console.error("Government data monitor health check failed:", monitorError);
+        healthCheck.status = 'ERROR';
+        healthCheck.details['governmentDataMonitor'] = { status: 'error', error: monitorError.message };
+      }
+
+      const status = healthCheck.status === 'OK' ? 200 : 503;
+      res.status(status).json(healthCheck);
+    } catch (error) {
+      console.error("General health check failed:", error);
+      res.status(503).json({
+        status: 'CRITICAL',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 

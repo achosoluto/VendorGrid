@@ -25,6 +25,7 @@ import {
 import { db } from "./db";
 import { eq, desc, or, ilike, and } from "drizzle-orm";
 import { encrypt, decrypt } from "./encryption";
+import { DataSanitization } from "./utils/dataSanitization";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -71,9 +72,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // If no ID is provided, generate one for new users (since schema no longer has default)
+    const valuesToInsert = userData.id 
+      ? userData 
+      : { 
+          ...userData, 
+          id: crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID()
+        };
+    
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values(valuesToInsert)
       .onConflictDoUpdate({
         target: users.id,
         set: {
@@ -129,28 +138,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVendorProfile(profileData: InsertVendorProfile): Promise<VendorProfile> {
-    // Encrypt sensitive fields
-    const encryptedProfile = {
-      ...profileData,
-      accountNumberEncrypted: profileData.accountNumberEncrypted 
-        ? encrypt(profileData.accountNumberEncrypted) 
-        : null,
-      routingNumberEncrypted: profileData.routingNumberEncrypted 
-        ? encrypt(profileData.routingNumberEncrypted) 
-        : null,
-    };
+    try {
+      // Validate special characters before insertion
+      const validation = this.validateSpecialCharacters(profileData);
+      if (!validation.isValid) {
+        throw new Error(`Invalid data: ${validation.error}`);
+      }
 
-    const [profile] = await db
-      .insert(vendorProfiles)
-      .values(encryptedProfile)
-      .returning();
-    
-    // Return with decrypted fields
-    return {
-      ...profile,
-      accountNumberEncrypted: profileData.accountNumberEncrypted || null,
-      routingNumberEncrypted: profileData.routingNumberEncrypted || null,
-    };
+      // Generate ID for SQLite compatibility since schema no longer has default
+      const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+      
+      // Encrypt sensitive fields
+      const encryptedProfile = {
+        ...profileData,
+        id, // Provide ID explicitly since schema no longer has default
+        accountNumberEncrypted: profileData.accountNumberEncrypted 
+          ? encrypt(profileData.accountNumberEncrypted) 
+          : null,
+        routingNumberEncrypted: profileData.routingNumberEncrypted 
+          ? encrypt(profileData.routingNumberEncrypted) 
+          : null,
+      };
+
+      const [profile] = await db
+        .insert(vendorProfiles)
+        .values(encryptedProfile)
+        .returning();
+      
+      // Return with decrypted fields
+      return {
+        ...profile,
+        accountNumberEncrypted: profileData.accountNumberEncrypted || null,
+        routingNumberEncrypted: profileData.routingNumberEncrypted || null,
+      };
+    } catch (error) {
+      // Log the original error for debugging
+      console.error('Database insertion error:', error);
+      
+      // Check if it's a SQL syntax error related to special characters
+      if (error.message && error.message.includes('syntax error')) {
+        throw new Error(`Database insertion failed due to invalid characters in input data. Please ensure special characters are properly escaped.`);
+      }
+      
+      throw error;
+    }
   }
 
   async updateVendorProfile(id: string, profileData: UpdateVendorProfile): Promise<VendorProfile> {
@@ -191,9 +222,15 @@ export class DatabaseStorage implements IStorage {
 
   // Audit log operations
   async createAuditLog(logData: InsertAuditLog): Promise<AuditLog> {
+    // Generate ID for SQLite compatibility since schema no longer has default
+    const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+    
     const [log] = await db
       .insert(auditLogs)
-      .values(logData)
+      .values({
+        ...logData,
+        id // Provide ID explicitly since schema no longer has default
+      })
       .returning();
     return log;
   }
@@ -208,9 +245,15 @@ export class DatabaseStorage implements IStorage {
 
   // Access log operations
   async createAccessLog(logData: InsertAccessLog): Promise<AccessLog> {
+    // Generate ID for SQLite compatibility since schema no longer has default
+    const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+    
     const [log] = await db
       .insert(accessLogs)
-      .values(logData)
+      .values({
+        ...logData,
+        id // Provide ID explicitly since schema no longer has default
+      })
       .returning();
     return log;
   }
@@ -225,9 +268,15 @@ export class DatabaseStorage implements IStorage {
 
   // Data provenance operations
   async createDataProvenance(provenanceData: InsertDataProvenance): Promise<DataProvenance> {
+    // Generate ID for SQLite compatibility since schema no longer has default
+    const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+    
     const [provenance] = await db
       .insert(dataProvenance)
-      .values(provenanceData)
+      .values({
+        ...provenanceData,
+        id // Provide ID explicitly since schema no longer has default
+      })
       .returning();
     return provenance;
   }
@@ -262,9 +311,15 @@ export class DatabaseStorage implements IStorage {
 
   // Vendor claiming operations
   async createClaimToken(tokenData: InsertClaimToken): Promise<ClaimToken> {
+    // Generate ID for SQLite compatibility since schema no longer has default
+    const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+    
     const [token] = await db
       .insert(claimTokens)
-      .values(tokenData)
+      .values({
+        ...tokenData,
+        id // Provide ID explicitly since schema no longer has default
+      })
       .returning();
     return token;
   }
@@ -334,9 +389,15 @@ export class DatabaseStorage implements IStorage {
 
   // Verification operations
   async createVerificationRequest(requestData: InsertVerificationRequest): Promise<VerificationRequest> {
+    // Generate ID for SQLite compatibility since schema no longer has default
+    const id = crypto.randomUUID ? crypto.randomUUID() : require('crypto').randomUUID();
+    
     const [request] = await db
       .insert(verificationRequests)
-      .values(requestData)
+      .values({
+        ...requestData,
+        id // Provide ID explicitly since schema no longer has default
+      })
       .returning();
     return request;
   }
@@ -361,6 +422,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(verificationRequests.id, id))
       .returning();
     return request;
+  }
+
+  private validateSpecialCharacters(profileData: InsertVendorProfile): { isValid: boolean; error?: string } {
+    const fieldsToCheck = [
+      profileData.companyName,
+      profileData.address,
+      profileData.city,
+      profileData.state,
+      profileData.email,
+      profileData.website
+    ];
+
+    for (const field of fieldsToCheck) {
+      if (field) {
+        const validation = DataSanitization.validateSpecialCharacters(field);
+        if (!validation.isValid) {
+          return validation;
+        }
+      }
+    }
+
+    return { isValid: true };
   }
 }
 

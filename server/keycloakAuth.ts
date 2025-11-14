@@ -6,21 +6,22 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import MemoryStore from 'memorystore';
 import { storage } from "./storage";
 
 /**
  * Keycloak Authentication Implementation
- * 
+ *
  * Replaces mock authentication with proper Keycloak OIDC authentication
  * for Phase 3 migration. Maintains compatibility with existing user flows.
- * 
+ *
  * Features:
  * - OIDC-compliant authentication flow
  * - Session management with PostgreSQL store
  * - Token refresh handling
  * - User data synchronization with database
  * - Rollback capability to mock auth
- */
+
 
 if (!process.env.KEYCLOAK_BASE_URL) {
   console.warn("⚠️  KEYCLOAK_BASE_URL not provided - Keycloak auth may not work correctly");
@@ -50,16 +51,29 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+  const authProvider = getActiveAuthProvider();
+
+  let store;
+
+  if (authProvider === "keycloak") {
+    // Use PostgreSQL session store for Keycloak auth
+    const pgStore = connectPg(session);
+    store = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: false,
+      ttl: sessionTtl,
+      tableName: "sessions",
+    });
+  } else {
+    // Use memory store for mock auth (development)
+    store = new MemoryStore.default({
+      checkPeriod: sessionTtl
+    });
+  }
+
   return session({
     secret: process.env.SESSION_SECRET || "default-secret-change-in-production",
-    store: sessionStore,
+    store: store,
     resave: false,
     saveUninitialized: false,
     cookie: {

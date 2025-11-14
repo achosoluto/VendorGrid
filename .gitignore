@@ -8,3 +8,8 @@ vite.config.ts.*
 *.db
 __pycache__
 *.pyc
+ODBus_v1/
+ODBUS_INGESTION*.md
+scripts/ingest-odbus-data.ts
+scripts/inject-*.ts
+scripts/inject-sample-records*.ts

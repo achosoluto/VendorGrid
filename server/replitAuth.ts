@@ -1,157 +1,136 @@
-import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
-
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import { getActiveAuthProvider } from "./keycloakAuth";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+/**
+ * Mock Authentication Implementation (Replit-style)
+ *
+ * Provides in-memory mock authentication for development and testing
+ * without requiring external authentication services.
+ */
 
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
-
-export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
+export function getReplitSession() {
   return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
+    secret: process.env.SESSION_SECRET || "default-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
-      maxAge: sessionTtl,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     },
   });
 }
 
-function updateUserSession(
-  user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
-) {
-  user.claims = tokens.claims();
-  user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
-}
-
-async function upsertUser(
-  claims: any,
-) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
-}
-
-export async function setupAuth(app: Express) {
+export async function setupMockAuth(app: Express) {
   app.set("trust proxy", 1);
-  app.use(getSession());
+  app.use(getReplitSession());
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  // Mock user data
+  const mockUsers = new Map();
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
-  };
-
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
-  }
-
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
-
-  app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
+  // Serialize/deserialize for session management
+  passport.serializeUser((user: any, done) => {
+    console.log("🔐 Serializing mock user:", user.email);
+    done(null, user.id);
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-    })(req, res, next);
+  passport.deserializeUser((id: any, done) => {
+    const user = mockUsers.get(id) || {
+      id: id,
+      email: `user${id}@example.com`,
+      firstName: "Mock",
+      lastName: "User",
+      profileImageUrl: null,
+    };
+    console.log("🔐 Deserializing mock user:", user.email);
+    done(null, user);
   });
 
+  // Login endpoint for mock auth
+  app.get("/api/login", (req, res) => {
+    console.log("🔐 Initiating mock login flow");
+    
+    // Create a mock user
+    const mockUserId = `mock-user-${Date.now()}`;
+    const mockUser = {
+      id: mockUserId,
+      email: `test${mockUserId}@example.com`,
+      firstName: "Test",
+      lastName: "User",
+      profileImageUrl: null,
+    };
+
+    // Store user in mock user map
+    mockUsers.set(mockUserId, mockUser);
+
+    // Log in the user
+    req.login(mockUser, (err) => {
+      if (err) {
+        console.error("❌ Mock login error:", err);
+        return res.status(500).json({ message: "Login failed" });
+      }
+
+      console.log("✅ Mock login successful for user:", mockUser.email);
+      res.redirect("/");
+    });
+  });
+
+  // Callback endpoint (for mock, just redirect to home)
+  app.get("/api/callback", (req, res) => {
+    console.log("🔄 Mock authentication callback");
+    res.redirect("/");
+  });
+
+  // Logout endpoint
   app.get("/api/logout", (req, res) => {
+    console.log("🚪 Mock logout initiated");
     req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      console.log("✅ Mock logout successful");
+      res.redirect("/");
+    });
+  });
+
+  // Session info endpoint
+  app.get("/api/auth/session", (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    const user = req.user as any;
+    res.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      },
     });
   });
 }
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
+export const isAuthenticated: RequestHandler = (req: any, res, next) => {
+  if (!req.isAuthenticated() || !req.user) {
+    console.log("🔒 Authentication failed - user not authenticated");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  console.log("✅ User authenticated:", (req.user as any).email);
+  next();
 };
+
+/**
+ * Mock authentication status for health checking
+ */
+export async function getMockAuthStatus() {
+  return {
+    provider: "mock",
+    status: "active",
+    environment: process.env.NODE_ENV || "development",
+    usersInSession: "mock user management",
+  };
+}

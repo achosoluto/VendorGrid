@@ -22,7 +22,7 @@ export const sessions = sqliteTable(
 
 // User storage table (required for Replit Auth)
 export const users = sqliteTable("users", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   email: text("email").unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -33,7 +33,7 @@ export const users = sqliteTable("users", {
 
 // Vendor profiles table
 export const vendorProfiles = sqliteTable("vendor_profiles", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   userId: text("user_id").references(() => users.id, { onDelete: 'cascade' }), // Made optional for data ingestion
   companyName: text("company_name").notNull(),
   
@@ -76,7 +76,7 @@ export const vendorProfiles = sqliteTable("vendor_profiles", {
 
 // Audit log table (immutable)
 export const auditLogs = sqliteTable("audit_logs", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   vendorProfileId: text("vendor_profile_id").notNull().references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   action: text("action").notNull(),
   actorId: text("actor_id").notNull(),
@@ -90,7 +90,7 @@ export const auditLogs = sqliteTable("audit_logs", {
 
 // Access log table
 export const accessLogs = sqliteTable("access_logs", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   vendorProfileId: text("vendor_profile_id").notNull().references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   accessorId: text("accessor_id").notNull(),
   accessorName: text("accessor_name").notNull(),
@@ -101,7 +101,7 @@ export const accessLogs = sqliteTable("access_logs", {
 
 // Data provenance table
 export const dataProvenance = sqliteTable("data_provenance", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   vendorProfileId: text("vendor_profile_id").notNull().references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   fieldName: text("field_name").notNull(),
   source: text("source").notNull(),
@@ -111,7 +111,7 @@ export const dataProvenance = sqliteTable("data_provenance", {
 
 // Vendor claim tokens for secure profile claiming
 export const claimTokens = sqliteTable("claim_tokens", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   vendorProfileId: text("vendor_profile_id").notNull().references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   token: text("token").notNull().unique(),
   email: text("email").notNull(),
@@ -125,7 +125,7 @@ export const claimTokens = sqliteTable("claim_tokens", {
 
 // Vendor verification requests and status tracking
 export const verificationRequests = sqliteTable("verification_requests", {
-  id: text("id").primaryKey().default(sql`crypto.randomUUID()`),
+  id: text("id").primaryKey(), // No default for SQLite compatibility - generate in app layer
   vendorProfileId: text("vendor_profile_id").notNull().references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   requestType: text("request_type").notNull(), // email, phone, address, tax_id, etc.
   status: text("status").notNull().default('pending'), // pending, in_progress, verified, failed

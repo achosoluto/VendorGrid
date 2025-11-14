@@ -279,3 +279,13 @@ Proprietary - All rights reserved
 ## Support
 
 For issues or questions, contact the development team.
+
+## Launch Scripts
+
+For a simple and reliable way to start the application, use the launch script:
+
+```bash
+./launch-app.sh
+```
+
+This script ensures all dependencies are in place, verifies the configuration, and starts the application with proper health checks. For more information, see `APP_LAUNCH_SCRIPT.md`.

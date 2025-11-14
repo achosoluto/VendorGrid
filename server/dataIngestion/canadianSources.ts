@@ -19,17 +19,31 @@ export interface DataSource {
 
 export const CANADIAN_DATA_SOURCES: DataSource[] = [
   {
-    name: 'Corporations Canada',
-    url: 'https://open.canada.ca/data/en/dataset/0032ce54-c5dd-4b66-99a0-320a7b934e07',
-    type: 'csv',
+    name: 'Statistics Canada Business Data',
+    url: 'https://www150.statcan.gc.ca/n1/en/pub/21-26-0003/2023001/ODBus_2023.zip?st=YxUgJ0IE', // Actual public URL from Statistics Canada
+    type: 'zip', // This is a ZIP file containing business data
     rateLimit: 60,
     fields: {
-      companyName: 'Corporation Name',
-      businessNumber: 'Corporation Number',
-      address: 'Registered Office Address',
-      city: 'City',
-      province: 'Province',
-      postalCode: 'Postal Code'
+      companyName: 'business_name',
+      businessNumber: 'business_number',
+      address: 'business_address',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postal_code'
+    }
+  },
+  {
+    name: 'Corporations Canada Open Data',
+    url: 'https://ised-isde.canada.ca/cc/lgcy/download/OPEN_DATA_SPLIT.zip', // Actual public URL for federal corporations
+    type: 'zip',
+    rateLimit: 60,
+    fields: {
+      companyName: 'corpName',
+      businessNumber: 'corpNum',
+      address: 'regOffAddr',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postalCd'
     }
   },
   {
@@ -47,17 +61,15 @@ export const CANADIAN_DATA_SOURCES: DataSource[] = [
     }
   },
   {
-    name: 'Statistics Canada Business Register',
-    url: 'https://open.canada.ca/data/en/dataset/1fd4d789-0e86-4526-9cd3-3d06d4c4c5a3',
-    type: 'csv',
-    rateLimit: 60,
+    name: 'OpenCorporates Canada API',
+    url: 'https://api.opencorporates.com/v0.4/companies/search', // Example API endpoint
+    type: 'api',
+    rateLimit: 100, // Free tier limit
     fields: {
-      companyName: 'business_name',
-      businessNumber: 'business_number',
-      address: 'business_address',
-      city: 'city',
-      province: 'province',
-      postalCode: 'postal_code'
+      companyName: 'company_name',
+      businessNumber: 'company_number',
+      address: 'registered_address',
+      jurisdiction_code: 'CA' // Canada jurisdiction
     }
   }
 ];
@@ -80,8 +92,22 @@ export const PROVINCIAL_SOURCES: DataSource[] = [
     }
   },
   {
+    name: 'Ontario Open Data - Business Licenses',
+    url: 'https://data.ontario.ca/en/dataset/licence-and-registration-data/resource/dummy-csv-file.csv', // Placeholder - actual URL to be determined
+    type: 'csv',
+    rateLimit: 60,
+    fields: {
+      companyName: 'business_name',
+      businessNumber: 'license_number',
+      address: 'business_address',
+      city: 'city',
+      province: 'province',
+      postalCode: 'postal_code'
+    }
+  },
+  {
     name: 'BC Corporate Registry',
-    url: 'https://www.bcregistry.gov.bc.ca/open-data', // Placeholder URL
+    url: 'https://www2.gov.bc.ca/gov/content/data/finding-and-sharing/data-distribution-services', // Actual BC data services
     type: 'csv',
     rateLimit: 60,
     fields: {
