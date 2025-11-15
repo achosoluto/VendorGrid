@@ -13,3 +13,4 @@ ODBUS_INGESTION*.md
 scripts/ingest-odbus-data.ts
 scripts/inject-*.ts
 scripts/inject-sample-records*.ts
+docs/private/
