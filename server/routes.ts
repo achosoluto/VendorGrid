@@ -2,8 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated as keycloakIsAuthenticated, getActiveAuthProvider, getAuthStatus } from "./keycloakAuth";
 import { setupMockAuth, isAuthenticated as mockIsAuthenticated, getMockAuthStatus } from "./replitAuth";
+const authProvider = "mock"; // using mock auth for dashboard launch
 import { insertVendorProfileSchema, updateVendorProfileSchema, users } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import governmentDataRoutes from "./routes/government-data-agent";
@@ -14,15 +14,9 @@ import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - uses provider switching (mock/keycloak)
-  const authProvider = getActiveAuthProvider();
-  console.log(`🔐 Authentication Provider: ${authProvider.toUpperCase()}`);
-
-  // Set up authentication based on provider
-  if (authProvider === "keycloak") {
-    await setupAuth(app);
-  } else {
-    await setupMockAuth(app);
-  }
+  // Use mock authentication for development
+  await setupMockAuth(app);
+  console.log(`🔐 Authentication Provider: MOCK`);
 
   // Rate limiting middleware
   const authLimiter = rateLimit({
@@ -52,14 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth status endpoint
   app.get('/api/auth/status', async (req, res) => {
     try {
-      const statusAuthProvider = getActiveAuthProvider();
-      let status;
-
-      if (statusAuthProvider === "keycloak") {
-        status = await getAuthStatus();
-      } else {
-        status = await getMockAuthStatus();
-      }
+      const status = await getMockAuthStatus();
 
       res.json({
         timestamp: new Date().toISOString(),
@@ -72,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get the appropriate authentication middleware based on provider
-  const isAuthenticated = authProvider === "keycloak" ? keycloakIsAuthenticated : mockIsAuthenticated;
+  const isAuthenticated = mockIsAuthenticated;
 
   // Auth routes (with stricter rate limiting)
   app.get('/api/auth/user', authLimiter, isAuthenticated, async (req: any, res) => {
@@ -468,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const sessionId = req.headers['x-session-id'];
       const acknowledged = governmentDataMonitor.acknowledgeNotification(id, String(sessionId));
-      
+
       if (acknowledged) {
         res.json({ success: true, message: "Notification acknowledged" });
       } else {
@@ -498,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString(),
         status: 'OK',
         environment: process.env.NODE_ENV || 'development',
-        authProvider: getActiveAuthProvider(),
+        authProvider: authProvider,
         database: {
           type: dbType,
           connected: true,
@@ -524,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check authentication system
       try {
-        const authStatus = await getAuthStatus();
+        const authStatus = await getMockAuthStatus();
         healthCheck.details['authentication'] = { status: authStatus.status };
       } catch (authError) {
         console.error("Authentication health check failed:", authError);
